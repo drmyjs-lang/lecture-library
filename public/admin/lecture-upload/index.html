@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lecture Upload - Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f6f8fb;
+      color: #1f2937;
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+    .muted {
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .field {
+      margin-bottom: 16px;
+    }
+    .field.full {
+      grid-column: 1 / -1;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      font: inherit;
+    }
+    input, textarea, select {
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #fff;
+    }
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+    .files-box {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fafafa;
+    }
+    .file-row {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px;
+      background: white;
+      margin-bottom: 12px;
+    }
+    .file-grid {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 12px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-secondary {
+      background: #eef2ff;
+      color: #1d4ed8;
+    }
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      margin-top: 12px;
+    }
+    .status {
+      margin-top: 16px;
+      padding: 14px;
+      border-radius: 12px;
+      display: none;
+      white-space: pre-wrap;
+    }
+    .status.ok {
+      display: block;
+      background: #ecfdf5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+    .status.error {
+      display: block;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+    .top-links {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .top-links a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    @media (max-width: 760px) {
+      .grid, .file-grid {
+        grid-template-columns: 1fr;
+      }
+      .actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top-links">
+      <a href="/lecture-library/">Open Lecture Library</a>
+      <a href="/">Home</a>
+    </div>
+
+    <div class="card">
+      <h1>Lecture Upload</h1>
+      <div class="muted">
+        Temporary admin form for testing the API before real R2 file upload.
+      </div>
+
+      <form id="lectureForm">
+        <div class="grid">
+          <div class="field">
+            <label for="title">Lecture Title</label>
+            <input id="title" name="title" required />
+          </div>
+
+          <div class="field">
+            <label for="speaker">Speaker</label>
+            <input id="speaker" name="speaker" />
+          </div>
+
+          <div class="field">
+            <label for="lecture_date">Lecture Date</label>
+            <input id="lecture_date" name="lecture_date" type="date" required />
+          </div>
+
+          <div class="field">
+            <label for="is_published">Published</label>
+            <select id="is_published" name="is_published">
+              <option value="1" selected>Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="description">Description</label>
+            <textarea id="description" name="description"></textarea>
+          </div>
+
+          <div class="field full">
+            <label for="cover_image_url">Cover Image URL (optional)</label>
+            <input id="cover_image_url" name="cover_image_url" placeholder="https://..." />
+          </div>
+
+          <div class="field full">
+            <label>Lecture Files</label>
+            <div class="files-box">
+              <div id="filesContainer"></div>
+              <button class="btn btn-secondary" type="button" id="addFileBtn">+ Add File</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Save Lecture</button>
+          <button class="btn btn-secondary" type="button" id="fillSampleBtn">Fill Sample</button>
+        </div>
+      </form>
+
+      <div id="statusBox" class="status"></div>
+    </div>
+  </div>
+
+  <template id="fileRowTemplate">
+    <div class="file-row">
+      <div class="file-grid">
+        <div class="field">
+          <label>File Name</label>
+          <input class="file_name" placeholder="Lecture slides.pdf" />
+        </div>
+
+        <div class="field">
+          <label>File Type</label>
+          <select class="file_type">
+            <option value="pdf">pdf</option>
+            <option value="ppt">ppt</option>
+            <option value="pptx">pptx</option>
+            <option value="doc">doc</option>
+            <option value="docx">docx</option>
+            <option value="other">other</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>File URL</label>
+          <input class="file_url" placeholder="https://..." />
+        </div>
+
+        <div class="field">
+          <label>File Size (bytes)</label>
+          <input class="file_size" type="number" min="0" value="0" />
+        </div>
+
+        <div class="field">
+          <label>Thumbnail URL (optional)</label>
+          <input class="thumbnail_url" placeholder="https://..." />
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-danger remove-file-btn">Remove File</button>
+    </div>
+  </template>
+
+  <script>
+    const form = document.getElementById("lectureForm");
+    const filesContainer = document.getElementById("filesContainer");
+    const addFileBtn = document.getElementById("addFileBtn");
+    const fillSampleBtn = document.getElementById("fillSampleBtn");
+    const statusBox = document.getElementById("statusBox");
+    const fileRowTemplate = document.getElementById("fileRowTemplate");
+
+    function showStatus(message, type = "ok") {
+      statusBox.className = "status " + type;
+      statusBox.textContent = message;
+    }
+
+    function clearStatus() {
+      statusBox.className = "status";
+      statusBox.textContent = "";
+    }
+
+    function addFileRow(data = {}) {
+      const node = fileRowTemplate.content.cloneNode(true);
+      const row = node.querySelector(".file-row");
+
+      row.querySelector(".file_name").value = data.file_name || "";
+      row.querySelector(".file_type").value = data.file_type || "pdf";
+      row.querySelector(".file_url").value = data.file_url || "";
+      row.querySelector(".file_size").value = data.file_size || 0;
+      row.querySelector(".thumbnail_url").value = data.thumbnail_url || "";
+
+      row.querySelector(".remove-file-btn").addEventListener("click", () => {
+        row.remove();
+      });
+
+      filesContainer.appendChild(node);
+    }
+
+    function collectFiles() {
+      return Array.from(filesContainer.querySelectorAll(".file-row"))
+        .map((row) => ({
+          file_name: row.querySelector(".file_name").value.trim(),
+          file_type: row.querySelector(".file_type").value.trim(),
+          file_url: row.querySelector(".file_url").value.trim(),
+          file_size: Number(row.querySelector(".file_size").value || 0),
+          thumbnail_url: row.querySelector(".thumbnail_url").value.trim(),
+        }))
+        .filter((f) => f.file_name && f.file_url);
+    }
+
+    addFileBtn.addEventListener("click", () => addFileRow());
+
+    fillSampleBtn.addEventListener("click", () => {
+      document.getElementById("title").value = "Diabetes Update 2026";
+      document.getElementById("speaker").value = "Dr. Ahmed";
+      document.getElementById("lecture_date").value = "2026-03-29";
+      document.getElementById("description").value = "Sample lecture used to test the first admin form and API.";
+      document.getElementById("cover_image_url").value = "";
+      document.getElementById("is_published").value = "1";
+
+      filesContainer.innerHTML = "";
+      addFileRow({
+        file_name: "Diabetes-Slides.pdf",
+        file_type: "pdf",
+        file_url: "https://example.com/files/diabetes-slides.pdf",
+        file_size: 1234567,
+        thumbnail_url: ""
+      });
+      addFileRow({
+        file_name: "Diabetes-Case-Discussion.pptx",
+        file_type: "pptx",
+        file_url: "https://example.com/files/diabetes-case-discussion.pptx",
+        file_size: 4567890,
+        thumbnail_url: ""
+      });
+
+      clearStatus();
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      clearStatus();
+
+      const payload = {
+        title: document.getElementById("title").value.trim(),
+        speaker: document.getElementById("speaker").value.trim(),
+        lecture_date: document.getElementById("lecture_date").value,
+        description: document.getElementById("description").value.trim(),
+        cover_image_url: document.getElementById("cover_image_url").value.trim(),
+        is_published: document.getElementById("is_published").value === "1",
+        files: collectFiles(),
+      };
+
+      if (!payload.title) {
+        showStatus("Title is required.", "error");
+        return;
+      }
+
+      if (!payload.lecture_date) {
+        showStatus("Lecture date is required.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/lectures", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || "Failed to save lecture.");
+        }
+
+        showStatus(
+          "Lecture saved successfully.\n\nSlug: " + data.item.slug + "\nID: " + data.item.id,
+          "ok"
+        );
+
+        form.reset();
+        filesContainer.innerHTML = "";
+        addFileRow();
+      } catch (error) {
+        showStatus(error.message || "Something went wrong.", "error");
+      }
+    });
+
+    addFileRow();
+  </script>
+</body>
+</html>
