@@ -302,6 +302,8 @@
         "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
     }
 
+    const MULTIPART_PART_SIZE = 10 * 1024 * 1024; // 10 MiB
+
     const form = document.getElementById("lectureForm");
     const filesContainer = document.getElementById("filesContainer");
     const addFileBtn = document.getElementById("addFileBtn");
@@ -401,22 +403,122 @@
       return data.file_url;
     }
 
-    async function uploadLectureFile(file) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload-lecture-file", {
+    async function startMultipartUpload(file) {
+      const response = await fetch("/api/upload-lecture-file?action=create", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type || "application/octet-stream",
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error || "Failed to upload lecture file.");
+        throw new Error(data.error || "Failed to start multipart upload.");
       }
 
       return data;
+    }
+
+    async function uploadMultipartPart({ key, uploadId, partNumber, blob }) {
+      const response = await fetch(
+        `/api/upload-lecture-file?action=upload-part&key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}&partNumber=${partNumber}`,
+        {
+          method: "PUT",
+          body: blob,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || `Failed to upload part ${partNumber}.`);
+      }
+
+      return data.part;
+    }
+
+    async function completeMultipartUpload({ key, uploadId, fileName, fileSize, parts }) {
+      const response = await fetch("/api/upload-lecture-file?action=complete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          key,
+          uploadId,
+          fileName,
+          fileSize,
+          parts,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to complete multipart upload.");
+      }
+
+      return data;
+    }
+
+    async function abortMultipartUpload({ key, uploadId }) {
+      await fetch(
+        `/api/upload-lecture-file?action=abort&key=${encodeURIComponent(key)}&uploadId=${encodeURIComponent(uploadId)}`,
+        {
+          method: "DELETE",
+        }
+      );
+    }
+
+    async function uploadLectureFile(file, displayName = "", onProgress) {
+      const started = await startMultipartUpload(file);
+      const totalParts = Math.ceil(file.size / MULTIPART_PART_SIZE);
+      const uploadedParts = [];
+
+      try {
+        for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+          const start = (partNumber - 1) * MULTIPART_PART_SIZE;
+          const end = Math.min(start + MULTIPART_PART_SIZE, file.size);
+          const blob = file.slice(start, end);
+
+          const uploadedPart = await uploadMultipartPart({
+            key: started.key,
+            uploadId: started.uploadId,
+            partNumber,
+            blob,
+          });
+
+          uploadedParts.push(uploadedPart);
+
+          if (typeof onProgress === "function") {
+            onProgress(partNumber, totalParts);
+          }
+        }
+
+        const completed = await completeMultipartUpload({
+          key: started.key,
+          uploadId: started.uploadId,
+          fileName: displayName || file.name,
+          fileSize: file.size,
+          parts: uploadedParts,
+        });
+
+        return completed;
+      } catch (error) {
+        try {
+          await abortMultipartUpload({
+            key: started.key,
+            uploadId: started.uploadId,
+          });
+        } catch (_) {}
+
+        throw error;
+      }
     }
 
     async function generatePdfThumbnailFile(pdfFile) {
@@ -502,9 +604,17 @@
 
         for (let i = 0; i < lectureFiles.length; i++) {
           const item = lectureFiles[i];
-          showStatus(`Uploading lecture file ${i + 1} of ${lectureFiles.length}: ${item.file.name}`, "ok");
 
-          const uploaded = await uploadLectureFile(item.file);
+          const uploaded = await uploadLectureFile(
+            item.file,
+            item.displayName,
+            (currentPart, totalParts) => {
+              showStatus(
+                `Uploading lecture file ${i + 1} of ${lectureFiles.length}: ${item.file.name}\nPart ${currentPart} of ${totalParts}`,
+                "ok"
+              );
+            }
+          );
 
           uploadedFiles.push({
             file_name: item.displayName || uploaded.file_name,
