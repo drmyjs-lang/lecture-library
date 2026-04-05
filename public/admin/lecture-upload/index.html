@@ -13,7 +13,7 @@
       color: #1f2937;
     }
     .wrap {
-      max-width: 960px;
+      max-width: 980px;
       margin: 40px auto;
       padding: 0 16px;
     }
@@ -77,7 +77,7 @@
     }
     .file-grid {
       display: grid;
-      grid-template-columns: 1fr 160px;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
     .actions {
@@ -111,6 +111,7 @@
       border-radius: 12px;
       display: none;
       white-space: pre-wrap;
+      line-height: 1.6;
     }
     .status.ok {
       display: block;
@@ -158,6 +159,17 @@
       color: #6b7280;
       line-height: 1.5;
     }
+    .file-meta {
+      border: 1px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 12px 14px;
+      background: #f9fafb;
+      color: #374151;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      line-height: 1.5;
+    }
     @media (max-width: 760px) {
       .grid, .file-grid {
         grid-template-columns: 1fr;
@@ -178,7 +190,7 @@
     <div class="card">
       <h1>Lecture Upload</h1>
       <div class="muted">
-        Admin form for creating lectures. Cover image is uploaded from your computer.
+        Admin form for creating lectures. Cover image and lecture files are uploaded from your computer.
       </div>
 
       <form id="lectureForm">
@@ -244,36 +256,23 @@
   <template id="fileRowTemplate">
     <div class="file-row">
       <div class="file-grid">
-        <div class="field">
-          <label>File Name</label>
-          <input class="file_name" placeholder="Lecture slides.pdf" />
+        <div class="field full">
+          <label>Lecture File</label>
+          <input
+            class="lecture_file"
+            type="file"
+            accept=".pdf,.ppt,.pptx,.doc,.docx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          />
         </div>
 
         <div class="field">
-          <label>File Type</label>
-          <select class="file_type">
-            <option value="pdf">pdf</option>
-            <option value="ppt">ppt</option>
-            <option value="pptx">pptx</option>
-            <option value="doc">doc</option>
-            <option value="docx">docx</option>
-            <option value="other">other</option>
-          </select>
+          <label>Display Name (optional)</label>
+          <input class="display_name" placeholder="Leave empty to use original file name" />
         </div>
 
         <div class="field">
-          <label>File URL</label>
-          <input class="file_url" placeholder="https://..." />
-        </div>
-
-        <div class="field">
-          <label>File Size (bytes)</label>
-          <input class="file_size" type="number" min="0" value="0" />
-        </div>
-
-        <div class="field">
-          <label>Thumbnail URL (optional)</label>
-          <input class="thumbnail_url" placeholder="https://..." />
+          <label>Selected File</label>
+          <div class="file-meta">No file selected.</div>
         </div>
       </div>
 
@@ -302,15 +301,35 @@
       statusBox.textContent = "";
     }
 
-    function addFileRow(data = {}) {
+    function formatBytes(bytes) {
+      const value = Number(bytes || 0);
+      if (!value) return "0 B";
+      const units = ["B", "KB", "MB", "GB"];
+      let size = value;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex++;
+      }
+      return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    function addFileRow() {
       const node = fileRowTemplate.content.cloneNode(true);
       const row = node.querySelector(".file-row");
+      const fileInput = row.querySelector(".lecture_file");
+      const metaBox = row.querySelector(".file-meta");
 
-      row.querySelector(".file_name").value = data.file_name || "";
-      row.querySelector(".file_type").value = data.file_type || "pdf";
-      row.querySelector(".file_url").value = data.file_url || "";
-      row.querySelector(".file_size").value = data.file_size || 0;
-      row.querySelector(".thumbnail_url").value = data.thumbnail_url || "";
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+        if (!file) {
+          metaBox.textContent = "No file selected.";
+          return;
+        }
+
+        const type = file.name.includes(".") ? file.name.split(".").pop().toUpperCase() : "FILE";
+        metaBox.textContent = `${file.name} • ${type} • ${formatBytes(file.size)}`;
+      });
 
       row.querySelector(".remove-file-btn").addEventListener("click", () => {
         row.remove();
@@ -319,16 +338,16 @@
       filesContainer.appendChild(node);
     }
 
-    function collectFiles() {
+    function getSelectedLectureFiles() {
       return Array.from(filesContainer.querySelectorAll(".file-row"))
-        .map((row) => ({
-          file_name: row.querySelector(".file_name").value.trim(),
-          file_type: row.querySelector(".file_type").value.trim(),
-          file_url: row.querySelector(".file_url").value.trim(),
-          file_size: Number(row.querySelector(".file_size").value || 0),
-          thumbnail_url: row.querySelector(".thumbnail_url").value.trim(),
-        }))
-        .filter((f) => f.file_name && f.file_url);
+        .map((row) => {
+          const fileInput = row.querySelector(".lecture_file");
+          const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+          const displayName = row.querySelector(".display_name").value.trim();
+
+          return { file, displayName };
+        })
+        .filter((item) => item.file);
     }
 
     function updateCoverPreview(file) {
@@ -361,6 +380,24 @@
       return data.file_url;
     }
 
+    async function uploadLectureFile(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload-lecture-file", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to upload lecture file.");
+      }
+
+      return data;
+    }
+
     addFileBtn.addEventListener("click", () => addFileRow());
 
     coverInput.addEventListener("change", () => {
@@ -375,23 +412,6 @@
       document.getElementById("lecture_date").value = "2026-03-29";
       document.getElementById("description").value = "Sample lecture used to test the first admin form and API.";
       document.getElementById("is_published").value = "1";
-
-      filesContainer.innerHTML = "";
-      addFileRow({
-        file_name: "Diabetes-Slides.pdf",
-        file_type: "pdf",
-        file_url: "https://example.com/files/diabetes-slides.pdf",
-        file_size: 1234567,
-        thumbnail_url: ""
-      });
-      addFileRow({
-        file_name: "Diabetes-Case-Discussion.pptx",
-        file_type: "pptx",
-        file_url: "https://example.com/files/diabetes-case-discussion.pptx",
-        file_size: 4567890,
-        thumbnail_url: ""
-      });
-
       clearStatus();
     });
 
@@ -405,6 +425,7 @@
       const description = document.getElementById("description").value.trim();
       const isPublished = document.getElementById("is_published").value === "1";
       const coverFile = coverInput.files && coverInput.files[0] ? coverInput.files[0] : null;
+      const lectureFiles = getSelectedLectureFiles();
 
       if (!title) {
         showStatus("Title is required.", "error");
@@ -424,6 +445,23 @@
           coverImageUrl = await uploadCoverImage(coverFile);
         }
 
+        const uploadedFiles = [];
+
+        for (let i = 0; i < lectureFiles.length; i++) {
+          const item = lectureFiles[i];
+          showStatus(`Uploading lecture file ${i + 1} of ${lectureFiles.length}: ${item.file.name}`, "ok");
+
+          const uploaded = await uploadLectureFile(item.file);
+
+          uploadedFiles.push({
+            file_name: item.displayName || uploaded.file_name,
+            file_type: uploaded.file_type,
+            file_url: uploaded.file_url,
+            file_size: uploaded.file_size,
+            thumbnail_url: uploaded.thumbnail_url || "",
+          });
+        }
+
         showStatus("Saving lecture...", "ok");
 
         const payload = {
@@ -433,7 +471,7 @@
           description,
           cover_image_url: coverImageUrl,
           is_published: isPublished,
-          files: collectFiles(),
+          files: uploadedFiles,
         };
 
         const res = await fetch("/api/lectures", {
