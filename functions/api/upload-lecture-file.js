@@ -1,13 +1,17 @@
+function corsHeaders() {
+  return {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+  };
+}
+
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
+    headers: corsHeaders(),
   });
 }
 
@@ -19,100 +23,190 @@ function sanitizeName(name) {
     .replace(/-+/g, "-");
 }
 
-function getExtension(file) {
-  const original = String(file?.name || "");
+function getExtension(fileName) {
+  const original = String(fileName || "");
   const fromName = original.includes(".") ? original.split(".").pop().toLowerCase() : "";
-  if (fromName) return fromName;
-
-  return "bin";
+  return fromName || "bin";
 }
 
-function detectSimpleType(ext) {
-  const value = String(ext || "").toLowerCase();
-  if (value === "pdf") return "pdf";
-  if (value === "ppt") return "ppt";
-  if (value === "pptx") return "pptx";
-  if (value === "doc") return "doc";
-  if (value === "docx") return "docx";
+function detectSimpleType(fileName) {
+  const ext = getExtension(fileName);
+  if (ext === "pdf") return "pdf";
+  if (ext === "ppt") return "ppt";
+  if (ext === "pptx") return "pptx";
+  if (ext === "doc") return "doc";
+  if (ext === "docx") return "docx";
   return "other";
 }
 
 export async function onRequestOptions() {
   return new Response(null, {
     status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
+    headers: corsHeaders(),
   });
 }
 
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
+    const url = new URL(request.url);
+    const action = url.searchParams.get("action");
 
-    const formData = await request.formData();
-    const file = formData.get("file");
+    if (action === "create") {
+      const body = await request.json();
+      const fileName = String(body.fileName || "").trim();
+      const fileType = String(body.fileType || "application/octet-stream").trim();
 
-    if (!file || typeof file.arrayBuffer !== "function") {
-      return json({ ok: false, error: "No file uploaded." }, 400);
-    }
+      if (!fileName) {
+        return json({ ok: false, error: "fileName is required." }, 400);
+      }
 
-    const maxSize = 250 * 1024 * 1024;
-    if ((file.size || 0) > maxSize) {
-      return json({ ok: false, error: "File is too large. Max 250 MB." }, 400);
-    }
+      const ext = getExtension(fileName);
+      const safeBaseName =
+        sanitizeName(String(fileName).replace(/\.[^.]+$/, "")) || "lecture-file";
 
-    const ext = getExtension(file);
-    const safeBaseName = sanitizeName(
-      String(file.name || "lecture-file").replace(/\.[^.]+$/, "")
-    ) || "lecture-file";
+      const randomPart = crypto.randomUUID();
+      const key = `lecture-files/${Date.now()}-${randomPart}-${safeBaseName}.${ext}`;
 
-    const randomPart = crypto.randomUUID();
-    const key = `lecture-files/${Date.now()}-${randomPart}-${safeBaseName}.${ext}`;
-
-    const bytes = await file.arrayBuffer();
-
-    await env.LECTURE_BUCKET.put(key, bytes, {
-      httpMetadata: {
-        contentType: file.type || "application/octet-stream",
-      },
-      customMetadata: {
-        originalName: String(file.name || ""),
-        uploadedAt: new Date().toISOString(),
-      },
-    });
-
-    const publicBase = String(env.R2_PUBLIC_BASE_URL || "").trim().replace(/\/+$/, "");
-    if (!publicBase) {
-      return json(
-        {
-          ok: false,
-          error: "Upload succeeded, but R2_PUBLIC_BASE_URL is not configured yet.",
-          key,
+      const multipartUpload = await env.LECTURE_BUCKET.createMultipartUpload(key, {
+        httpMetadata: {
+          contentType: fileType || "application/octet-stream",
         },
-        500
+        customMetadata: {
+          originalName: fileName,
+          uploadedAt: new Date().toISOString(),
+        },
+      });
+
+      return json({
+        ok: true,
+        key: multipartUpload.key,
+        uploadId: multipartUpload.uploadId,
+      });
+    }
+
+    if (action === "complete") {
+      const body = await request.json();
+      const key = String(body.key || "").trim();
+      const uploadId = String(body.uploadId || "").trim();
+      const fileName = String(body.fileName || "").trim();
+      const fileSize = Number(body.fileSize || 0);
+      const parts = Array.isArray(body.parts) ? body.parts : [];
+
+      if (!key || !uploadId) {
+        return json({ ok: false, error: "key and uploadId are required." }, 400);
+      }
+
+      if (!parts.length) {
+        return json({ ok: false, error: "No uploaded parts provided." }, 400);
+      }
+
+      const multipartUpload = env.LECTURE_BUCKET.resumeMultipartUpload(key, uploadId);
+      await multipartUpload.complete(parts);
+
+      const publicBase = String(env.R2_PUBLIC_BASE_URL || "").trim().replace(/\/+$/, "");
+      if (!publicBase) {
+        return json(
+          {
+            ok: false,
+            error: "Upload completed, but R2_PUBLIC_BASE_URL is not configured.",
+          },
+          500
+        );
+      }
+
+      return json({
+        ok: true,
+        key,
+        file_url: `${publicBase}/${key}`,
+        file_name: fileName,
+        file_type: detectSimpleType(fileName),
+        file_size: fileSize,
+        thumbnail_url: "",
+      });
+    }
+
+    return json({ ok: false, error: "Unknown action." }, 400);
+  } catch (error) {
+    return json(
+      {
+        ok: false,
+        error: error.message || "Multipart upload failed.",
+      },
+      500
+    );
+  }
+}
+
+export async function onRequestPut(context) {
+  try {
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const action = url.searchParams.get("action");
+
+    if (action !== "upload-part") {
+      return json({ ok: false, error: "Unknown action." }, 400);
+    }
+
+    const key = String(url.searchParams.get("key") || "").trim();
+    const uploadId = String(url.searchParams.get("uploadId") || "").trim();
+    const partNumber = Number(url.searchParams.get("partNumber") || 0);
+
+    if (!key || !uploadId || !partNumber) {
+      return json(
+        { ok: false, error: "key, uploadId, and partNumber are required." },
+        400
       );
     }
 
-    const fileUrl = `${publicBase}/${key}`;
-    const simpleType = detectSimpleType(ext);
+    if (!request.body) {
+      return json({ ok: false, error: "Missing request body." }, 400);
+    }
+
+    const multipartUpload = env.LECTURE_BUCKET.resumeMultipartUpload(key, uploadId);
+    const uploadedPart = await multipartUpload.uploadPart(partNumber, request.body);
 
     return json({
       ok: true,
-      key,
-      file_url: fileUrl,
-      file_name: file.name || "",
-      file_type: simpleType,
-      file_size: file.size || 0,
-      thumbnail_url: "",
+      part: uploadedPart,
     });
   } catch (error) {
     return json(
       {
         ok: false,
-        error: error.message || "Failed to upload lecture file.",
+        error: error.message || "Failed to upload part.",
+      },
+      500
+    );
+  }
+}
+
+export async function onRequestDelete(context) {
+  try {
+    const { request, env } = context;
+    const url = new URL(request.url);
+    const action = url.searchParams.get("action");
+
+    if (action !== "abort") {
+      return json({ ok: false, error: "Unknown action." }, 400);
+    }
+
+    const key = String(url.searchParams.get("key") || "").trim();
+    const uploadId = String(url.searchParams.get("uploadId") || "").trim();
+
+    if (!key || !uploadId) {
+      return json({ ok: false, error: "key and uploadId are required." }, 400);
+    }
+
+    const multipartUpload = env.LECTURE_BUCKET.resumeMultipartUpload(key, uploadId);
+    await multipartUpload.abort();
+
+    return json({ ok: true });
+  } catch (error) {
+    return json(
+      {
+        ok: false,
+        error: error.message || "Failed to abort multipart upload.",
       },
       500
     );
