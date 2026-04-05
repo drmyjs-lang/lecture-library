@@ -135,6 +135,29 @@
       text-decoration: none;
       font-weight: 600;
     }
+    .cover-preview-wrap {
+      margin-top: 10px;
+      display: none;
+    }
+    .cover-preview-wrap.show {
+      display: block;
+    }
+    .cover-preview {
+      width: 100%;
+      max-width: 320px;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #f3f4f6;
+      display: block;
+    }
+    .small-note {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
     @media (max-width: 760px) {
       .grid, .file-grid {
         grid-template-columns: 1fr;
@@ -155,7 +178,7 @@
     <div class="card">
       <h1>Lecture Upload</h1>
       <div class="muted">
-        Temporary admin form for testing the API before real R2 file upload.
+        Admin form for creating lectures. Cover image is uploaded from your computer.
       </div>
 
       <form id="lectureForm">
@@ -189,8 +212,14 @@
           </div>
 
           <div class="field full">
-            <label for="cover_image_url">Cover Image URL (optional)</label>
-            <input id="cover_image_url" name="cover_image_url" placeholder="https://..." />
+            <label for="cover_image">Cover Image (optional)</label>
+            <input id="cover_image" name="cover_image" type="file" accept="image/*" />
+            <div class="small-note">
+              Upload from your computer. If left empty, the lecture will use PDF preview later or the default thumbnail.
+            </div>
+            <div id="coverPreviewWrap" class="cover-preview-wrap">
+              <img id="coverPreview" class="cover-preview" alt="Cover preview" />
+            </div>
           </div>
 
           <div class="field full">
@@ -259,6 +288,9 @@
     const fillSampleBtn = document.getElementById("fillSampleBtn");
     const statusBox = document.getElementById("statusBox");
     const fileRowTemplate = document.getElementById("fileRowTemplate");
+    const coverInput = document.getElementById("cover_image");
+    const coverPreviewWrap = document.getElementById("coverPreviewWrap");
+    const coverPreview = document.getElementById("coverPreview");
 
     function showStatus(message, type = "ok") {
       statusBox.className = "status " + type;
@@ -299,14 +331,49 @@
         .filter((f) => f.file_name && f.file_url);
     }
 
+    function updateCoverPreview(file) {
+      if (!file) {
+        coverPreview.src = "";
+        coverPreviewWrap.classList.remove("show");
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      coverPreview.src = objectUrl;
+      coverPreviewWrap.classList.add("show");
+    }
+
+    async function uploadCoverImage(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload-cover", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to upload cover image.");
+      }
+
+      return data.file_url;
+    }
+
     addFileBtn.addEventListener("click", () => addFileRow());
+
+    coverInput.addEventListener("change", () => {
+      const file = coverInput.files && coverInput.files[0] ? coverInput.files[0] : null;
+      updateCoverPreview(file);
+      clearStatus();
+    });
 
     fillSampleBtn.addEventListener("click", () => {
       document.getElementById("title").value = "Diabetes Update 2026";
       document.getElementById("speaker").value = "Dr. Ahmed";
       document.getElementById("lecture_date").value = "2026-03-29";
       document.getElementById("description").value = "Sample lecture used to test the first admin form and API.";
-      document.getElementById("cover_image_url").value = "";
       document.getElementById("is_published").value = "1";
 
       filesContainer.innerHTML = "";
@@ -332,27 +399,43 @@
       e.preventDefault();
       clearStatus();
 
-      const payload = {
-        title: document.getElementById("title").value.trim(),
-        speaker: document.getElementById("speaker").value.trim(),
-        lecture_date: document.getElementById("lecture_date").value,
-        description: document.getElementById("description").value.trim(),
-        cover_image_url: document.getElementById("cover_image_url").value.trim(),
-        is_published: document.getElementById("is_published").value === "1",
-        files: collectFiles(),
-      };
+      const title = document.getElementById("title").value.trim();
+      const speaker = document.getElementById("speaker").value.trim();
+      const lectureDate = document.getElementById("lecture_date").value;
+      const description = document.getElementById("description").value.trim();
+      const isPublished = document.getElementById("is_published").value === "1";
+      const coverFile = coverInput.files && coverInput.files[0] ? coverInput.files[0] : null;
 
-      if (!payload.title) {
+      if (!title) {
         showStatus("Title is required.", "error");
         return;
       }
 
-      if (!payload.lecture_date) {
+      if (!lectureDate) {
         showStatus("Lecture date is required.", "error");
         return;
       }
 
       try {
+        let coverImageUrl = "";
+
+        if (coverFile) {
+          showStatus("Uploading cover image...", "ok");
+          coverImageUrl = await uploadCoverImage(coverFile);
+        }
+
+        showStatus("Saving lecture...", "ok");
+
+        const payload = {
+          title,
+          speaker,
+          lecture_date: lectureDate,
+          description,
+          cover_image_url: coverImageUrl,
+          is_published: isPublished,
+          files: collectFiles(),
+        };
+
         const res = await fetch("/api/lectures", {
           method: "POST",
           headers: {
@@ -375,6 +458,7 @@
         form.reset();
         filesContainer.innerHTML = "";
         addFileRow();
+        updateCoverPreview(null);
       } catch (error) {
         showStatus(error.message || "Something went wrong.", "error");
       }
