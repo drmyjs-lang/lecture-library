@@ -1,12 +1,92 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lecture Library</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Med Lecture Library</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+      color: #1f2937;
+    }
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 40px 16px;
+    }
+    .hero {
+      background: white;
+      border-radius: 24px;
+      padding: 40px 28px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.08);
+      text-align: center;
+      margin-top: 32px;
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 42px;
+    }
+    .lead {
+      margin: 0 auto 24px;
+      max-width: 760px;
+      color: #6b7280;
+      line-height: 1.8;
+      font-size: 18px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 20px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-secondary {
+      background: #eef2ff;
+      color: #1d4ed8;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .footer a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
-  <h1>Lecture Library</h1>
-  <p>First deploy is working.</p>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Med Lecture Library</h1>
+      <p class="lead">
+        Browse lectures, search by title or speaker, and access lecture files in one organized library.
+      </p>
+
+      <div class="actions">
+        <a class="btn btn-primary" href="/lecture-library/">Open Lecture Library</a>
+        <a class="btn btn-secondary" href="/admin/lecture-upload/">Admin Upload</a>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <a href="/lecture-library/">Lecture Library</a>
+    </footer>
+  </div>
 </body>
 </html>
