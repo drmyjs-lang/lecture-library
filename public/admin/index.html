@@ -18,18 +18,22 @@
       --shadow:0 10px 30px rgba(0,0,0,.08);
       --radius:18px;
     }
+
     *{box-sizing:border-box}
+
     body{
       margin:0;
       font-family:Tahoma, Arial, sans-serif;
       background:var(--bg);
       color:var(--text);
     }
+
     .wrap{
       max-width:1100px;
       margin:40px auto;
       padding:0 16px;
     }
+
     .topbar{
       background:var(--card);
       border:1px solid var(--line);
@@ -43,20 +47,24 @@
       flex-wrap:wrap;
       margin-bottom:20px;
     }
+
     .title h1{
       margin:0;
       font-size:30px;
     }
+
     .title p{
       margin:8px 0 0;
       color:var(--muted);
       font-size:15px;
     }
+
     .actions{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
     }
+
     button,a.btn{
       border:none;
       border-radius:14px;
@@ -68,20 +76,28 @@
       align-items:center;
       justify-content:center;
       gap:8px;
+      font-family:inherit;
     }
+
     .btn-primary{
       background:var(--blue);
       color:#fff;
     }
-    .btn-primary:hover{background:var(--blue2)}
+
+    .btn-primary:hover{
+      background:var(--blue2);
+    }
+
     .btn-light{
       background:#eef2ff;
       color:var(--blue);
     }
+
     .btn-danger{
       background:#fee2e2;
       color:var(--red);
     }
+
     .card{
       background:var(--card);
       border:1px solid var(--line);
@@ -90,6 +106,7 @@
       padding:20px;
       margin-bottom:20px;
     }
+
     .status{
       display:none;
       margin-bottom:16px;
@@ -97,17 +114,23 @@
       border-radius:14px;
       font-size:15px;
     }
-    .status.show{display:block}
+
+    .status.show{
+      display:block;
+    }
+
     .status.ok{
       background:#dcfce7;
       color:#166534;
       border:1px solid #bbf7d0;
     }
+
     .status.err{
       background:#fee2e2;
       color:#991b1b;
       border:1px solid #fecaca;
     }
+
     .empty{
       color:var(--muted);
       text-align:center;
@@ -116,10 +139,12 @@
       border-radius:14px;
       background:#fafafa;
     }
+
     .list{
       display:grid;
       gap:14px;
     }
+
     .lecture{
       border:1px solid var(--line);
       border-radius:16px;
@@ -130,6 +155,7 @@
       align-items:start;
       background:#fff;
     }
+
     .thumb{
       width:120px;
       height:120px;
@@ -145,10 +171,12 @@
       text-align:center;
       padding:8px;
     }
+
     .lecture h3{
       margin:0 0 8px;
       font-size:22px;
     }
+
     .meta{
       color:var(--muted);
       font-size:14px;
@@ -156,26 +184,31 @@
       gap:6px;
       margin-bottom:12px;
     }
+
     .desc{
       font-size:15px;
       line-height:1.8;
       margin-bottom:14px;
       white-space:pre-wrap;
     }
+
     .lecture-actions{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
     }
+
     .loading{
       text-align:center;
       color:var(--muted);
       padding:20px;
     }
+
     @media (max-width:700px){
       .lecture{
         grid-template-columns:1fr;
       }
+
       .thumb{
         width:100%;
         height:180px;
@@ -188,12 +221,12 @@
     <div class="topbar">
       <div class="title">
         <h1>لوحة إدارة مكتبة المحاضرات</h1>
-        <p>إدارة المحاضرات الحالية، مع إمكانية تسجيل الخروج والانتقال لصفحة الرفع.</p>
+        <p>إدارة المحاضرات الحالية، مع إمكانية الحذف وتسجيل الخروج والانتقال لصفحة الرفع.</p>
       </div>
 
       <div class="actions">
         <a class="btn btn-light" href="/admin/lecture-upload/">رفع محاضرة جديدة</a>
-        <button id="logoutBtn" class="btn-danger">تسجيل الخروج</button>
+        <button id="logoutBtn" class="btn-danger" type="button">تسجيل الخروج</button>
       </div>
     </div>
 
@@ -216,6 +249,11 @@
     function showStatus(message, type = "ok") {
       statusBox.textContent = message;
       statusBox.className = `status show ${type}`;
+    }
+
+    function hideStatus() {
+      statusBox.textContent = "";
+      statusBox.className = "status";
     }
 
     function escapeHtml(value) {
@@ -277,8 +315,8 @@
             <div class="desc">${escapeHtml(item.description || "لا يوجد وصف.")}</div>
 
             <div class="lecture-actions">
-              <button class="btn-light" onclick="alert('سنضيف التعديل في الخطوة التالية')">تعديل</button>
-              <button class="btn-danger" onclick="alert('سنضيف الحذف في الخطوة التالية')">حذف</button>
+              <button class="btn-light" type="button" onclick="alert('سنضيف التعديل في الخطوة التالية')">تعديل</button>
+              <button class="btn-danger" type="button" onclick="deleteLecture(${Number(item.id)})">حذف</button>
             </div>
           </div>
         `;
@@ -289,6 +327,11 @@
 
     async function loadLectures() {
       try {
+        hideStatus();
+        loadingEl.style.display = "block";
+        emptyEl.style.display = "none";
+        listEl.innerHTML = "";
+
         const res = await fetch("/api/lectures");
         const data = await res.json();
 
@@ -300,6 +343,32 @@
       } catch (err) {
         loadingEl.style.display = "none";
         showStatus(err.message || "حدث خطأ أثناء تحميل المحاضرات.", "err");
+      }
+    }
+
+    async function deleteLecture(id) {
+      const ok = window.confirm("هل أنت متأكد من حذف هذه المحاضرة؟");
+      if (!ok) return;
+
+      try {
+        const res = await fetch("/api/admin-delete-lecture", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ id })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر حذف المحاضرة.");
+        }
+
+        showStatus("تم حذف المحاضرة بنجاح.", "ok");
+        await loadLectures();
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء حذف المحاضرة.", "err");
       }
     }
 
@@ -327,6 +396,8 @@
 
     logoutBtn.addEventListener("click", logout);
     loadLectures();
+
+    window.deleteLecture = deleteLecture;
   </script>
 </body>
 </html>
