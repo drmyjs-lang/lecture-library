@@ -1,60 +1,63 @@
-function getCookie(cookieHeader, name) {
-  if (!cookieHeader) return null;
+function getCookie(request, name) {
+  const cookieHeader = request.headers.get("Cookie") || "";
+  const cookies = cookieHeader.split(";");
 
-  const parts = cookieHeader.split(/;\s*/);
-  for (const part of parts) {
-    const index = part.indexOf("=");
-    if (index === -1) continue;
-
-    const key = part.slice(0, index);
-    const value = part.slice(index + 1);
-
+  for (const item of cookies) {
+    const [key, ...rest] = item.trim().split("=");
     if (key === name) {
-      try {
-        return decodeURIComponent(value);
-      } catch {
-        return value;
-      }
+      return rest.join("=");
     }
   }
 
   return null;
 }
 
+function isLoggedIn(request) {
+  return getCookie(request, "__lecture_admin") === "1";
+}
+
+function redirect(url) {
+  return Response.redirect(url.toString(), 302);
+}
+
 export async function onRequest(context) {
-  const url = new URL(context.request.url);
+  const { request, next } = context;
+  const url = new URL(request.url);
   const path = url.pathname;
 
-  const isAdminPath = path === "/admin" || path.startsWith("/admin/");
+  const loggedIn = isLoggedIn(request);
+
   const isLoginPage =
     path === "/admin/login" ||
     path === "/admin/login/" ||
     path === "/admin/login/index.html";
 
-  const isAllowedApi =
+  const isAdminApi =
     path === "/api/admin-login" ||
     path === "/api/admin-logout";
 
-  if (!isAdminPath || isLoginPage || isAllowedApi) {
-    return context.next();
+  const isAdminArea = path.startsWith("/admin");
+
+  if (isAdminApi) {
+    return next();
   }
 
-  const sessionToken = getCookie(
-    context.request.headers.get("Cookie"),
-    "lecture_admin_session"
-  );
-
-  if (
-    sessionToken &&
-    context.env.ADMIN_SESSION_TOKEN &&
-    sessionToken === context.env.ADMIN_SESSION_TOKEN
-  ) {
-    return context.next();
+  if (!isAdminArea) {
+    return next();
   }
 
-  const next = path + url.search;
-  const loginUrl = new URL("/admin/login/", url.origin);
-  loginUrl.searchParams.set("next", next);
+  if (isLoginPage) {
+    if (loggedIn) {
+      return redirect(new URL("/admin/", url));
+    }
+    return next();
+  }
 
-  return Response.redirect(loginUrl.toString(), 302);
+  if (!loggedIn) {
+    const loginUrl = new URL("/admin/login/", url);
+    loginUrl.searchParams.set("next", path);
+    return redirect(loginUrl);
+  }
+
+  return next();
 }
