@@ -20,6 +20,10 @@ function safeEqual(a, b) {
   return result === 0;
 }
 
+function clean(v) {
+  return String(v ?? "").trim().normalize("NFKC");
+}
+
 function buildCookie(name, value, maxAge) {
   const parts = [
     `${name}=${value}`,
@@ -41,17 +45,18 @@ export async function onRequestPost(context) {
     const { request, env } = context;
 
     const contentType = request.headers.get("content-type") || "";
-    let password = "";
+    let rawPassword = "";
 
     if (contentType.includes("application/json")) {
       const body = await request.json();
-      password = String(body.password || "");
+      rawPassword = body.password;
     } else {
       const form = await request.formData();
-      password = String(form.get("password") || "");
+      rawPassword = form.get("password");
     }
 
-    const adminPass = String(env.ADMIN_PASSWORD || "");
+    const password = clean(rawPassword);
+    const adminPass = clean(env.ADMIN_PASSWORD);
 
     if (!adminPass) {
       return json(
@@ -67,9 +72,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    const passOk = safeEqual(password, adminPass);
-
-    if (!passOk) {
+    if (!safeEqual(password, adminPass)) {
       return json(
         { ok: false, error: "Invalid password." },
         401
