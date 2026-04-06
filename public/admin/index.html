@@ -315,7 +315,7 @@
             <div class="desc">${escapeHtml(item.description || "لا يوجد وصف.")}</div>
 
             <div class="lecture-actions">
-              <button class="btn-light" type="button" onclick="alert('سنضيف التعديل في الخطوة التالية')">تعديل</button>
+              <button class="btn-light" type="button" onclick="window.location.href='/admin/edit-lecture/?id=${Number(item.id)}'">تعديل</button>
               <button class="btn-danger" type="button" onclick="deleteLecture(${Number(item.id)})">حذف</button>
             </div>
           </div>
