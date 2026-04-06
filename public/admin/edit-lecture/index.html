@@ -29,7 +29,7 @@
     }
 
     .wrap{
-      max-width:900px;
+      max-width:950px;
       margin:40px auto;
       padding:0 16px;
     }
@@ -86,7 +86,9 @@
       font-weight:bold;
     }
 
-    input, textarea{
+    input[type="text"],
+    input[type="url"],
+    textarea{
       width:100%;
       border:1px solid var(--line);
       border-radius:14px;
@@ -97,12 +99,23 @@
       background:#fff;
     }
 
-    input:focus, textarea:focus{
+    input[type="text"]:focus,
+    input[type="url"]:focus,
+    textarea:focus{
       border-color:var(--blue);
     }
 
+    input[type="file"]{
+      width:100%;
+      border:1px dashed var(--line);
+      border-radius:14px;
+      padding:14px;
+      background:#fff;
+      font-family:inherit;
+    }
+
     textarea{
-      min-height:150px;
+      min-height:160px;
       resize:vertical;
       line-height:1.8;
     }
@@ -146,13 +159,49 @@
       color:var(--muted);
       padding:8px 0 18px;
     }
+
+    .box{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fafafa;
+      padding:14px;
+    }
+
+    .box-title{
+      font-weight:bold;
+      margin-bottom:10px;
+    }
+
+    .preview-img{
+      width:100%;
+      max-width:280px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      display:block;
+      background:#fff;
+    }
+
+    .small{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.8;
+    }
+
+    .check{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+      font-size:14px;
+      color:var(--text);
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="card">
       <h1>تعديل المحاضرة</h1>
-      <div class="sub">يمكنك تعديل بيانات المحاضرة ثم حفظ التغييرات.</div>
+      <div class="sub">يمكنك تعديل البيانات أو رفع ملف وصورة جديدين من الكمبيوتر.</div>
 
       <div id="status" class="status"></div>
       <div id="loading" class="loading">جاري تحميل البيانات...</div>
@@ -170,18 +219,44 @@
           </div>
 
           <div>
-            <label for="file_url">رابط الملف</label>
-            <input id="file_url" name="file_url" type="url" placeholder="https://..." />
-          </div>
-
-          <div>
-            <label for="cover_image">رابط صورة الغلاف</label>
-            <input id="cover_image" name="cover_image" type="url" placeholder="https://..." />
-          </div>
-
-          <div>
             <label for="description">الوصف</label>
             <textarea id="description" name="description" placeholder="اكتب وصف المحاضرة هنا"></textarea>
+          </div>
+
+          <div class="box">
+            <div class="box-title">الملف الحالي</div>
+            <div id="currentFileBox" class="small">لا يوجد ملف حالي.</div>
+
+            <label for="lecture_file" style="margin-top:14px;">استبدال الملف من الكمبيوتر</label>
+            <input
+              id="lecture_file"
+              name="lecture_file"
+              type="file"
+              accept=".pdf,.ppt,.pptx,.doc,.docx"
+            />
+
+            <label class="check">
+              <input id="remove_file" name="remove_file" type="checkbox" />
+              إزالة ربط الملف الحالي من هذه المحاضرة
+            </label>
+          </div>
+
+          <div class="box">
+            <div class="box-title">صورة الغلاف الحالية</div>
+            <div id="currentCoverBox" class="small">لا توجد صورة غلاف حالية.</div>
+
+            <label for="cover_file" style="margin-top:14px;">استبدال صورة الغلاف من الكمبيوتر</label>
+            <input
+              id="cover_file"
+              name="cover_file"
+              type="file"
+              accept="image/*"
+            />
+
+            <label class="check">
+              <input id="remove_cover" name="remove_cover" type="checkbox" />
+              إزالة ربط صورة الغلاف الحالية من هذه المحاضرة
+            </label>
           </div>
         </div>
 
@@ -201,12 +276,22 @@
 
     const titleEl = document.getElementById("title");
     const lectureDateEl = document.getElementById("lecture_date");
-    const fileUrlEl = document.getElementById("file_url");
-    const coverImageEl = document.getElementById("cover_image");
     const descriptionEl = document.getElementById("description");
+
+    const lectureFileEl = document.getElementById("lecture_file");
+    const coverFileEl = document.getElementById("cover_file");
+
+    const removeFileEl = document.getElementById("remove_file");
+    const removeCoverEl = document.getElementById("remove_cover");
+
+    const currentFileBox = document.getElementById("currentFileBox");
+    const currentCoverBox = document.getElementById("currentCoverBox");
 
     const url = new URL(window.location.href);
     const lectureId = Number(url.searchParams.get("id"));
+
+    let currentFileUrl = "";
+    let currentCoverUrl = "";
 
     function showStatus(message, type = "ok") {
       statusBox.textContent = message;
@@ -216,6 +301,39 @@
     function hideStatus() {
       statusBox.textContent = "";
       statusBox.className = "status";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderCurrentFile(url) {
+      if (!url) {
+        currentFileBox.innerHTML = `<div class="small">لا يوجد ملف حالي.</div>`;
+        return;
+      }
+
+      currentFileBox.innerHTML = `
+        <a href="${escapeHtml(url)}" target="_blank" rel="noopener">فتح الملف الحالي</a>
+        <div class="small" style="margin-top:8px;">${escapeHtml(url)}</div>
+      `;
+    }
+
+    function renderCurrentCover(url) {
+      if (!url) {
+        currentCoverBox.innerHTML = `<div class="small">لا توجد صورة غلاف حالية.</div>`;
+        return;
+      }
+
+      currentCoverBox.innerHTML = `
+        <img class="preview-img" src="${escapeHtml(url)}" alt="Cover image" />
+        <div class="small" style="margin-top:8px;">${escapeHtml(url)}</div>
+      `;
     }
 
     async function loadLecture() {
@@ -237,9 +355,13 @@
 
         titleEl.value = item.title || "";
         lectureDateEl.value = item.lecture_date || "";
-        fileUrlEl.value = item.file_url || "";
-        coverImageEl.value = item.cover_image || "";
         descriptionEl.value = item.description || "";
+
+        currentFileUrl = item.file_url || "";
+        currentCoverUrl = item.cover_image || "";
+
+        renderCurrentFile(currentFileUrl);
+        renderCurrentCover(currentCoverUrl);
 
         loadingEl.style.display = "none";
         form.style.display = "block";
@@ -257,21 +379,27 @@
         saveBtn.disabled = true;
         saveBtn.textContent = "جاري الحفظ...";
 
-        const payload = {
-          id: lectureId,
-          title: titleEl.value,
-          lecture_date: lectureDateEl.value,
-          file_url: fileUrlEl.value,
-          cover_image: coverImageEl.value,
-          description: descriptionEl.value
-        };
+        const formData = new FormData();
+        formData.append("id", String(lectureId));
+        formData.append("title", titleEl.value);
+        formData.append("lecture_date", lectureDateEl.value);
+        formData.append("description", descriptionEl.value);
+        formData.append("existing_file_url", currentFileUrl);
+        formData.append("existing_cover_image", currentCoverUrl);
+        formData.append("remove_file", removeFileEl.checked ? "1" : "0");
+        formData.append("remove_cover", removeCoverEl.checked ? "1" : "0");
+
+        if (lectureFileEl.files && lectureFileEl.files[0]) {
+          formData.append("lecture_file", lectureFileEl.files[0]);
+        }
+
+        if (coverFileEl.files && coverFileEl.files[0]) {
+          formData.append("cover_file", coverFileEl.files[0]);
+        }
 
         const res = await fetch("/api/admin-update-lecture", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
+          body: formData
         });
 
         const data = await res.json().catch(() => ({}));
