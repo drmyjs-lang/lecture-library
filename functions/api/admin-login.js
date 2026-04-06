@@ -41,59 +41,47 @@ export async function onRequestPost(context) {
     const { request, env } = context;
 
     const contentType = request.headers.get("content-type") || "";
-    let body = {};
+    let password = "";
 
     if (contentType.includes("application/json")) {
-      body = await request.json();
+      const body = await request.json();
+      password = String(body.password || "");
     } else {
       const form = await request.formData();
-      body = {
-        username: form.get("username"),
-        password: form.get("password"),
-      };
+      password = String(form.get("password") || "");
     }
 
-    const username = String(body.username || "").trim();
-    const password = String(body.password || "");
-
-    const adminUser = String(env.ADMIN_USERNAME || "").trim();
     const adminPass = String(env.ADMIN_PASSWORD || "");
 
-    if (!adminUser || !adminPass) {
+    if (!adminPass) {
       return json(
-        { ok: false, error: "Admin credentials are not configured on the server." },
+        { ok: false, error: "Admin password is not configured on the server." },
         500
       );
     }
 
-    if (!username || !password) {
+    if (!password) {
       return json(
-        { ok: false, error: "Username and password are required." },
+        { ok: false, error: "Password is required." },
         400
       );
     }
 
-    const userOk = safeEqual(username, adminUser);
     const passOk = safeEqual(password, adminPass);
 
-    if (!userOk || !passOk) {
+    if (!passOk) {
       return json(
-        { ok: false, error: "Invalid username or password." },
+        { ok: false, error: "Invalid password." },
         401
       );
     }
 
-    const cookie = buildCookie("__lecture_admin", "1", 60 * 60 * 12); // 12 hours
+    const cookie = buildCookie("__lecture_admin", "1", 60 * 60 * 12);
 
     return json(
-      {
-        ok: true,
-        message: "Login successful.",
-      },
+      { ok: true, message: "Login successful." },
       200,
-      {
-        "Set-Cookie": cookie,
-      }
+      { "Set-Cookie": cookie }
     );
   } catch (err) {
     return json(
