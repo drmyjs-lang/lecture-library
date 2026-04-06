@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تعديل المحاضرة</title>
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --card:#ffffff;
+      --text:#14213d;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --blue:#2563eb;
+      --blue2:#1d4ed8;
+      --red:#dc2626;
+      --green:#16a34a;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:Tahoma, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      max-width:900px;
+      margin:40px auto;
+      padding:0 16px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:24px;
+    }
+
+    h1{
+      margin:0 0 8px;
+      font-size:30px;
+    }
+
+    .sub{
+      color:var(--muted);
+      margin-bottom:22px;
+      font-size:15px;
+    }
+
+    .status{
+      display:none;
+      margin-bottom:16px;
+      padding:14px 16px;
+      border-radius:14px;
+      font-size:15px;
+    }
+
+    .status.show{display:block}
+    .status.ok{
+      background:#dcfce7;
+      color:#166534;
+      border:1px solid #bbf7d0;
+    }
+    .status.err{
+      background:#fee2e2;
+      color:#991b1b;
+      border:1px solid #fecaca;
+    }
+
+    .grid{
+      display:grid;
+      gap:16px;
+    }
+
+    label{
+      display:block;
+      font-size:14px;
+      margin-bottom:8px;
+      color:var(--text);
+      font-weight:bold;
+    }
+
+    input, textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px 14px;
+      font-size:15px;
+      font-family:inherit;
+      outline:none;
+      background:#fff;
+    }
+
+    input:focus, textarea:focus{
+      border-color:var(--blue);
+    }
+
+    textarea{
+      min-height:150px;
+      resize:vertical;
+      line-height:1.8;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    button, a.btn{
+      border:none;
+      border-radius:14px;
+      padding:12px 18px;
+      font-size:15px;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      font-family:inherit;
+    }
+
+    .btn-primary{
+      background:var(--blue);
+      color:#fff;
+    }
+
+    .btn-primary:hover{
+      background:var(--blue2);
+    }
+
+    .btn-light{
+      background:#eef2ff;
+      color:var(--blue);
+    }
+
+    .loading{
+      color:var(--muted);
+      padding:8px 0 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>تعديل المحاضرة</h1>
+      <div class="sub">يمكنك تعديل بيانات المحاضرة ثم حفظ التغييرات.</div>
+
+      <div id="status" class="status"></div>
+      <div id="loading" class="loading">جاري تحميل البيانات...</div>
+
+      <form id="editForm" style="display:none;">
+        <div class="grid">
+          <div>
+            <label for="title">عنوان المحاضرة</label>
+            <input id="title" name="title" type="text" required />
+          </div>
+
+          <div>
+            <label for="lecture_date">تاريخ المحاضرة</label>
+            <input id="lecture_date" name="lecture_date" type="text" placeholder="مثال: 2026-04-07" />
+          </div>
+
+          <div>
+            <label for="file_url">رابط الملف</label>
+            <input id="file_url" name="file_url" type="url" placeholder="https://..." />
+          </div>
+
+          <div>
+            <label for="cover_image">رابط صورة الغلاف</label>
+            <input id="cover_image" name="cover_image" type="url" placeholder="https://..." />
+          </div>
+
+          <div>
+            <label for="description">الوصف</label>
+            <textarea id="description" name="description" placeholder="اكتب وصف المحاضرة هنا"></textarea>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="saveBtn" class="btn-primary" type="submit">حفظ التعديلات</button>
+          <a class="btn btn-light" href="/admin/">العودة إلى لوحة الإدارة</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const statusBox = document.getElementById("status");
+    const loadingEl = document.getElementById("loading");
+    const form = document.getElementById("editForm");
+    const saveBtn = document.getElementById("saveBtn");
+
+    const titleEl = document.getElementById("title");
+    const lectureDateEl = document.getElementById("lecture_date");
+    const fileUrlEl = document.getElementById("file_url");
+    const coverImageEl = document.getElementById("cover_image");
+    const descriptionEl = document.getElementById("description");
+
+    const url = new URL(window.location.href);
+    const lectureId = Number(url.searchParams.get("id"));
+
+    function showStatus(message, type = "ok") {
+      statusBox.textContent = message;
+      statusBox.className = `status show ${type}`;
+    }
+
+    function hideStatus() {
+      statusBox.textContent = "";
+      statusBox.className = "status";
+    }
+
+    async function loadLecture() {
+      try {
+        hideStatus();
+
+        if (!Number.isInteger(lectureId) || lectureId <= 0) {
+          throw new Error("رقم المحاضرة غير صالح.");
+        }
+
+        const res = await fetch(`/api/admin-get-lecture?id=${lectureId}`);
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر تحميل بيانات المحاضرة.");
+        }
+
+        const item = data.item || {};
+
+        titleEl.value = item.title || "";
+        lectureDateEl.value = item.lecture_date || "";
+        fileUrlEl.value = item.file_url || "";
+        coverImageEl.value = item.cover_image || "";
+        descriptionEl.value = item.description || "";
+
+        loadingEl.style.display = "none";
+        form.style.display = "block";
+      } catch (err) {
+        loadingEl.style.display = "none";
+        showStatus(err.message || "حدث خطأ أثناء تحميل البيانات.", "err");
+      }
+    }
+
+    async function saveLecture(event) {
+      event.preventDefault();
+
+      try {
+        hideStatus();
+        saveBtn.disabled = true;
+        saveBtn.textContent = "جاري الحفظ...";
+
+        const payload = {
+          id: lectureId,
+          title: titleEl.value,
+          lecture_date: lectureDateEl.value,
+          file_url: fileUrlEl.value,
+          cover_image: coverImageEl.value,
+          description: descriptionEl.value
+        };
+
+        const res = await fetch("/api/admin-update-lecture", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر حفظ التعديلات.");
+        }
+
+        showStatus("تم حفظ التعديلات بنجاح.", "ok");
+
+        setTimeout(() => {
+          window.location.href = "/admin/";
+        }, 700);
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء الحفظ.", "err");
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "حفظ التعديلات";
+      }
+    }
+
+    form.addEventListener("submit", saveLecture);
+    loadLecture();
+  </script>
+</body>
+</html>
