@@ -377,12 +377,52 @@
       }
     }
 
+    function pickFirstValue(...values) {
+      for (const value of values) {
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          return value;
+        }
+      }
+      return "";
+    }
+
+    function normalizeLecture(item) {
+      return {
+        id: pickFirstValue(item?.id, item?.ID),
+        title: pickFirstValue(item?.title, item?.name),
+        description: pickFirstValue(item?.description, item?.desc, item?.details, item?.summary),
+        lecture_date: pickFirstValue(item?.lecture_date, item?.lectureDate, item?.date),
+        file_url: pickFirstValue(
+          item?.file_url,
+          item?.fileUrl,
+          item?.public_url,
+          item?.publicUrl,
+          item?.file_link,
+          item?.fileLink,
+          item?.file
+        ),
+        cover_image: pickFirstValue(
+          item?.cover_image,
+          item?.coverImage,
+          item?.thumbnail_url,
+          item?.thumbnailUrl,
+          item?.cover_url,
+          item?.coverUrl,
+          item?.image_url,
+          item?.imageUrl
+        ),
+        created_at: pickFirstValue(item?.created_at, item?.createdAt)
+      };
+    }
+
     function sortLectures(items) {
-      return [...items].sort((a, b) => {
-        const aDate = new Date(a?.created_at || a?.lecture_date || 0).getTime();
-        const bDate = new Date(b?.created_at || b?.lecture_date || 0).getTime();
-        return bDate - aDate;
-      });
+      return [...items]
+        .map(normalizeLecture)
+        .sort((a, b) => {
+          const aDate = new Date(a?.created_at || a?.lecture_date || 0).getTime();
+          const bDate = new Date(b?.created_at || b?.lecture_date || 0).getTime();
+          return bDate - aDate;
+        });
     }
 
     function updateCounts(filteredItems) {
@@ -391,11 +431,12 @@
     }
 
     function buildSearchText(item) {
+      const normalized = normalizeLecture(item);
       return [
-        item?.title || "",
-        item?.description || "",
-        item?.lecture_date || "",
-        item?.file_url || ""
+        normalized.title || "",
+        normalized.description || "",
+        normalized.lecture_date || "",
+        normalized.file_url || ""
       ].join(" ").toLowerCase();
     }
 
@@ -423,13 +464,15 @@
 
       emptyEl.style.display = "none";
 
-      for (const item of items) {
+      for (const rawItem of items) {
+        const item = normalizeLecture(rawItem);
+
         const article = document.createElement("article");
         article.className = "lecture";
 
         const cover = item.cover_image || "";
         const thumbStyle = cover
-          ? `background-image:url('${cover.replaceAll("'", "%27")}')`
+          ? `background-image:url('${String(cover).replaceAll("'", "%27")}')`
           : "";
 
         const fileUrl = item.file_url || "";
@@ -473,7 +516,7 @@
                     <a class="btn btn-success" href="${safeFileUrl}" target="_blank" rel="noopener">
                       فتح الملف
                     </a>
-                    <button class="btn-light" type="button" onclick="copyText(${JSON.stringify(fileUrl)})">
+                    <button class="btn-light" type="button" onclick='copyText(${JSON.stringify(fileUrl)})'>
                       نسخ الرابط
                     </button>
                   `
@@ -538,7 +581,7 @@
           throw new Error(data?.error || "تعذر حذف المحاضرة.");
         }
 
-        allLectures = allLectures.filter(item => Number(item.id) !== Number(id));
+        allLectures = allLectures.filter(item => Number(normalizeLecture(item).id) !== Number(id));
         applyFilter();
         showStatus("تم حذف المحاضرة بنجاح.", "ok");
       } catch (err) {
