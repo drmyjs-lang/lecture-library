@@ -39,6 +39,57 @@ function isValidUrl(value) {
   }
 }
 
+async function getLectureColumns(env) {
+  const result = await env.DB.prepare("PRAGMA table_info(lectures)").all();
+  const rows = Array.isArray(result?.results) ? result.results : [];
+  return rows.map(row => row.name);
+}
+
+function pickColumn(columns, candidates) {
+  for (const name of candidates) {
+    if (columns.includes(name)) return name;
+  }
+  return null;
+}
+
+function pickValue(row, keys) {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+  return "";
+}
+
+function normalizeLecture(row) {
+  return {
+    id: row?.id ?? "",
+    title: pickValue(row, ["title", "name"]),
+    description: pickValue(row, ["description", "desc", "details", "summary"]),
+    lecture_date: pickValue(row, ["lecture_date", "lectureDate", "date"]),
+    file_url: pickValue(row, [
+      "file_url",
+      "fileUrl",
+      "public_url",
+      "publicUrl",
+      "file_link",
+      "fileLink",
+      "file"
+    ]),
+    cover_image: pickValue(row, [
+      "cover_image",
+      "coverImage",
+      "thumbnail_url",
+      "thumbnailUrl",
+      "cover_url",
+      "coverUrl",
+      "image_url",
+      "imageUrl"
+    ])
+  };
+}
+
 function extFromFilename(name = "") {
   const cleanName = String(name || "").trim();
   const idx = cleanName.lastIndexOf(".");
@@ -136,39 +187,44 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Title is required." }, 400);
     }
 
-    const existing = await env.DB
-      .prepare(`
-        SELECT id, file_url, cover_image
-        FROM lectures
-        WHERE id = ?
-      `)
+    const columns = await getLectureColumns(env);
+
+    const titleCol = pickColumn(columns, ["title", "name"]);
+    const descriptionCol = pickColumn(columns, ["description", "desc", "details", "summary"]);
+    const lectureDateCol = pickColumn(columns, ["lecture_date", "lectureDate", "date"]);
+    const fileUrlCol = pickColumn(columns, ["file_url", "fileUrl", "public_url", "publicUrl", "file_link", "fileLink", "file"]);
+    const coverImageCol = pickColumn(columns, ["cover_image", "coverImage", "thumbnail_url", "thumbnailUrl", "cover_url", "coverUrl", "image_url", "imageUrl"]);
+
+    if (!titleCol) {
+      return json({ ok: false, error: "Could not detect title column in lectures table." }, 500);
+    }
+
+    const row = await env.DB
+      .prepare("SELECT * FROM lectures WHERE id = ?")
       .bind(id)
       .first();
 
-    if (!existing) {
+    if (!row) {
       return json({ ok: false, error: "Lecture not found." }, 404);
     }
+
+    const existing = normalizeLecture(row);
 
     let finalFileUrl = existingFileUrlFromForm || clean(existing.file_url);
     let finalCoverImage = existingCoverImageFromForm || clean(existing.cover_image);
 
-    if (removeFile) {
-      finalFileUrl = "";
-    }
+    if (removeFile) finalFileUrl = "";
+    if (removeCover) finalCoverImage = "";
 
-    if (removeCover) {
-      finalCoverImage = "";
-    }
-
-    const bucket = env.LECTURE_FILES;
-    const publicBaseUrl = clean(env.PUBLIC_R2_BASE_URL);
+    const bucket = env.LECTURE_BUCKET || env.LECTURE_FILES;
+    const publicBaseUrl = clean(env.R2_PUBLIC_BASE_URL || env.PUBLIC_R2_BASE_URL);
 
     if (isRealFile(lectureFile)) {
       if (!bucket) {
-        return json({ ok: false, error: "R2 binding LECTURE_FILES is missing." }, 500);
+        return json({ ok: false, error: "R2 binding is missing. Expected LECTURE_BUCKET or LECTURE_FILES." }, 500);
       }
       if (!publicBaseUrl) {
-        return json({ ok: false, error: "PUBLIC_R2_BASE_URL is missing." }, 500);
+        return json({ ok: false, error: "R2 public base URL is missing." }, 500);
       }
 
       finalFileUrl = await uploadToR2(bucket, publicBaseUrl, "lectures/files", lectureFile);
@@ -176,10 +232,10 @@ export async function onRequestPost(context) {
 
     if (isRealFile(coverFile)) {
       if (!bucket) {
-        return json({ ok: false, error: "R2 binding LECTURE_FILES is missing." }, 500);
+        return json({ ok: false, error: "R2 binding is missing. Expected LECTURE_BUCKET or LECTURE_FILES." }, 500);
       }
       if (!publicBaseUrl) {
-        return json({ ok: false, error: "PUBLIC_R2_BASE_URL is missing." }, 500);
+        return json({ ok: false, error: "R2 public base URL is missing." }, 500);
       }
 
       if (!String(coverFile.type || "").startsWith("image/")) {
@@ -197,25 +253,43 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Invalid final cover image URL." }, 400);
     }
 
+    const sets = [];
+    const values = [];
+
+    if (titleCol) {
+      sets.push(`${titleCol} = ?`);
+      values.push(title);
+    }
+
+    if (descriptionCol) {
+      sets.push(`${descriptionCol} = ?`);
+      values.push(description);
+    }
+
+    if (lectureDateCol) {
+      sets.push(`${lectureDateCol} = ?`);
+      values.push(lectureDate);
+    }
+
+    if (fileUrlCol) {
+      sets.push(`${fileUrlCol} = ?`);
+      values.push(finalFileUrl);
+    }
+
+    if (coverImageCol) {
+      sets.push(`${coverImageCol} = ?`);
+      values.push(finalCoverImage);
+    }
+
+    if (sets.length === 0) {
+      return json({ ok: false, error: "No updatable columns were detected." }, 500);
+    }
+
+    values.push(id);
+
     const result = await env.DB
-      .prepare(`
-        UPDATE lectures
-        SET
-          title = ?,
-          description = ?,
-          lecture_date = ?,
-          file_url = ?,
-          cover_image = ?
-        WHERE id = ?
-      `)
-      .bind(
-        title,
-        description,
-        lectureDate,
-        finalFileUrl,
-        finalCoverImage,
-        id
-      )
+      .prepare(`UPDATE lectures SET ${sets.join(", ")} WHERE id = ?`)
+      .bind(...values)
       .run();
 
     if (!result.success) {
