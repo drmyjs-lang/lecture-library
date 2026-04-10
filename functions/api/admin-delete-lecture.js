@@ -88,10 +88,26 @@ export async function onRequestPost(context) {
     const id = Number(body.id);
 
     if (!Number.isInteger(id) || id <= 0) {
-      return json({ ok: false, error: "Invalid file id." }, 400);
+      return json({ ok: false, error: "Invalid lecture id." }, 400);
     }
 
-    const existing = await env.DB.prepare(`
+    const lecture = await env.DB.prepare(`
+      SELECT
+        id,
+        title,
+        cover_image_url
+      FROM lectures
+      WHERE id = ?
+      LIMIT 1
+    `)
+      .bind(id)
+      .first();
+
+    if (!lecture) {
+      return json({ ok: false, error: "Lecture not found." }, 404);
+    }
+
+    const filesResult = await env.DB.prepare(`
       SELECT
         id,
         lecture_id,
@@ -99,60 +115,64 @@ export async function onRequestPost(context) {
         file_url,
         thumbnail_url
       FROM lecture_files
-      WHERE id = ?
-      LIMIT 1
+      WHERE lecture_id = ?
+      ORDER BY created_at DESC, id DESC
     `)
       .bind(id)
-      .first();
+      .all();
 
-    if (!existing) {
-      return json({ ok: false, error: "File not found." }, 404);
+    const files = filesResult.results || [];
+
+    const urlsToDelete = new Set();
+
+    if (clean(lecture.cover_image_url)) {
+      urlsToDelete.add(clean(lecture.cover_image_url));
+    }
+
+    for (const file of files) {
+      if (clean(file.file_url)) {
+        urlsToDelete.add(clean(file.file_url));
+      }
+      if (clean(file.thumbnail_url)) {
+        urlsToDelete.add(clean(file.thumbnail_url));
+      }
     }
 
     const deletedObjects = [];
-
-    if (clean(existing.file_url)) {
+    for (const fileUrl of urlsToDelete) {
       const result = await deleteR2ObjectByUrl(
         env.LECTURE_BUCKET,
         env.R2_PUBLIC_BASE_URL,
-        existing.file_url
+        fileUrl
       );
       deletedObjects.push(result);
     }
 
-    if (clean(existing.thumbnail_url)) {
-      const result = await deleteR2ObjectByUrl(
-        env.LECTURE_BUCKET,
-        env.R2_PUBLIC_BASE_URL,
-        existing.thumbnail_url
-      );
-      deletedObjects.push(result);
-    }
+    await env.DB.batch([
+      env.DB.prepare(`
+        DELETE FROM lecture_files
+        WHERE lecture_id = ?
+      `).bind(id),
 
-    const dbResult = await env.DB.prepare(`
-      DELETE FROM lecture_files
-      WHERE id = ?
-    `)
-      .bind(id)
-      .run();
-
-    if (!dbResult.success) {
-      return json({ ok: false, error: "Failed to delete file from database." }, 500);
-    }
+      env.DB.prepare(`
+        DELETE FROM lectures
+        WHERE id = ?
+      `).bind(id),
+    ]);
 
     return json({
       ok: true,
-      message: "File deleted successfully from DB and R2.",
-      deletedId: id,
-      lectureId: existing.lecture_id,
-      fileName: existing.file_name || "",
+      message: "Lecture deleted successfully from DB and R2.",
+      deletedLectureId: id,
+      deletedLectureTitle: lecture.title || "",
+      deletedFilesCount: files.length,
       deletedObjects,
     });
   } catch (error) {
     return json(
       {
         ok: false,
-        error: error.message || "Failed to delete file",
+        error: error.message || "Failed to delete lecture",
       },
       500
     );
