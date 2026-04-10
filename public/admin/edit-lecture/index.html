@@ -234,7 +234,7 @@
   <div class="wrap">
     <div class="card">
       <h1>تعديل المحاضرة</h1>
-      <div class="sub">تعديل البيانات الأساسية، رفع أو حذف الغلاف، تعديل أسماء الملفات، حذف الملفات الحالية، وإضافة ملفات جديدة.</div>
+      <div class="sub">تعديل البيانات الأساسية، رفع أو حذف الغلاف، تعديل أسماء الملفات، ترتيبها، حذف الملفات الحالية، وإضافة ملفات جديدة.</div>
 
       <div id="status" class="status"></div>
       <div id="loading" class="loading">جاري تحميل البيانات...</div>
@@ -298,6 +298,11 @@
 
           <div class="box">
             <div class="box-title">الملفات الحالية</div>
+
+            <div class="actions" style="margin-bottom:12px;">
+              <button id="saveFilesOrderBtn" class="btn btn-success" type="button">حفظ ترتيب الملفات</button>
+            </div>
+
             <div id="filesBox" class="empty">لا توجد ملفات.</div>
           </div>
 
@@ -331,6 +336,7 @@
     const uploadFilesBtn = document.getElementById("uploadFilesBtn");
     const uploadCoverBtn = document.getElementById("uploadCoverBtn");
     const clearCoverBtn = document.getElementById("clearCoverBtn");
+    const saveFilesOrderBtn = document.getElementById("saveFilesOrderBtn");
 
     const titleEl = document.getElementById("title");
     const speakerEl = document.getElementById("speaker");
@@ -346,6 +352,8 @@
 
     const url = new URL(window.location.href);
     const lectureId = Number(url.searchParams.get("id"));
+
+    let currentFiles = [];
 
     function showStatus(message, type = "ok") {
       statusBox.textContent = message;
@@ -378,15 +386,31 @@
       `;
     }
 
+    function moveFileUp(id) {
+      const index = currentFiles.findIndex((f) => Number(f.id) === Number(id));
+      if (index <= 0) return;
+      [currentFiles[index - 1], currentFiles[index]] = [currentFiles[index], currentFiles[index - 1]];
+      renderFiles(currentFiles);
+    }
+
+    function moveFileDown(id) {
+      const index = currentFiles.findIndex((f) => Number(f.id) === Number(id));
+      if (index === -1 || index >= currentFiles.length - 1) return;
+      [currentFiles[index + 1], currentFiles[index]] = [currentFiles[index], currentFiles[index + 1]];
+      renderFiles(currentFiles);
+    }
+
     function renderFiles(files) {
       if (!Array.isArray(files) || !files.length) {
         filesBox.innerHTML = `<div class="empty">لا توجد ملفات مرتبطة بهذه المحاضرة.</div>`;
         return;
       }
 
-      filesBox.innerHTML = files.map((file) => `
+      filesBox.innerHTML = files.map((file, index) => `
         <div class="file-row">
           <div class="file-name">
+            <div class="small" style="margin-bottom:6px;">الترتيب الحالي: ${index + 1}</div>
+
             <label style="margin-bottom:6px; display:block;">اسم الملف المعروض</label>
             <input
               id="file_name_${Number(file.id)}"
@@ -403,6 +427,9 @@
           </div>
 
           <div class="file-actions">
+            <button class="btn btn-light" type="button" onclick="moveFileUp(${Number(file.id)})">↑ أعلى</button>
+            <button class="btn btn-light" type="button" onclick="moveFileDown(${Number(file.id)})">↓ أسفل</button>
+
             <button class="btn btn-success" type="button" onclick="renameFile(${Number(file.id)})">
               حفظ الاسم
             </button>
@@ -443,8 +470,10 @@
         coverImageUrlEl.value = item.cover_image_url || "";
         isPublishedEl.value = String(item.is_published ?? 1);
 
+        currentFiles = Array.isArray(item.files) ? item.files : [];
+
         renderCover(item.cover_image_url || "");
-        renderFiles(item.files || []);
+        renderFiles(currentFiles);
 
         loadingEl.style.display = "none";
         form.style.display = "block";
@@ -515,6 +544,46 @@
         await loadLecture();
       } catch (err) {
         showStatus(err.message || "حدث خطأ أثناء تعديل اسم الملف.", "err");
+      }
+    }
+
+    async function saveFilesOrder() {
+      try {
+        hideStatus();
+
+        if (!currentFiles.length) {
+          throw new Error("لا توجد ملفات لترتيبها.");
+        }
+
+        saveFilesOrderBtn.disabled = true;
+        saveFilesOrderBtn.textContent = "جاري حفظ الترتيب...";
+
+        const orderedIds = currentFiles.map((file) => Number(file.id));
+
+        const res = await fetch("/api/admin-reorder-files", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            lecture_id: lectureId,
+            ordered_ids: orderedIds
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر حفظ ترتيب الملفات.");
+        }
+
+        showStatus("تم حفظ ترتيب الملفات بنجاح.", "ok");
+        await loadLecture();
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء حفظ ترتيب الملفات.", "err");
+      } finally {
+        saveFilesOrderBtn.disabled = false;
+        saveFilesOrderBtn.textContent = "حفظ ترتيب الملفات";
       }
     }
 
@@ -655,6 +724,7 @@
     uploadFilesBtn.addEventListener("click", uploadNewFiles);
     uploadCoverBtn.addEventListener("click", uploadCover);
     clearCoverBtn.addEventListener("click", clearCover);
+    saveFilesOrderBtn.addEventListener("click", saveFilesOrder);
 
     coverImageUrlEl.addEventListener("input", () => {
       renderCover(coverImageUrlEl.value.trim());
@@ -662,6 +732,8 @@
 
     window.deleteFile = deleteFile;
     window.renameFile = renameFile;
+    window.moveFileUp = moveFileUp;
+    window.moveFileDown = moveFileDown;
 
     loadLecture();
   </script>
