@@ -265,8 +265,11 @@
 
           <div class="grid-2">
             <div>
-              <label for="cover_image_url">رابط صورة الغلاف</label>
+              <label for="cover_image_url">رابط صورة الغلاف المخصص</label>
               <input id="cover_image_url" name="cover_image_url" type="text" />
+              <div class="small" style="margin-top:8px;">
+                إذا تركته فارغًا، سيستخدم النظام أول thumbnail من الملفات تلقائيًا، أو placeholder افتراضي.
+              </div>
             </div>
 
             <div>
@@ -291,7 +294,7 @@
 
               <div class="actions" style="margin-top:14px;">
                 <button id="uploadCoverBtn" class="btn-success" type="button">رفع الغلاف</button>
-                <button id="clearCoverBtn" class="btn-danger" type="button">إزالة الغلاف الحالي</button>
+                <button id="clearCoverBtn" class="btn-danger" type="button">إزالة الغلاف المخصص</button>
               </div>
             </div>
           </div>
@@ -354,6 +357,8 @@
     const lectureId = Number(url.searchParams.get("id"));
 
     let currentFiles = [];
+    let serverEffectiveCover = "";
+    let currentTitle = "";
 
     function showStatus(message, type = "ok") {
       statusBox.textContent = message;
@@ -374,7 +379,42 @@
         .replaceAll("'", "&#039;");
     }
 
-    function renderCover(url) {
+    function makePlaceholderCoverDataUrl(label = "Lecture Library") {
+      const safeLabel = String(label || "Lecture")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+          <rect width="1200" height="675" fill="#eef2ff"/>
+          <rect x="50" y="50" width="1100" height="575" rx="28" fill="#ffffff" stroke="#dbeafe" stroke-width="3"/>
+          <circle cx="160" cy="140" r="28" fill="#2563eb" opacity="0.18"/>
+          <circle cx="1080" cy="540" r="42" fill="#2563eb" opacity="0.12"/>
+          <text x="90" y="250" font-size="34" font-family="Arial, Tahoma, sans-serif" fill="#2563eb">Lecture Library</text>
+          <text x="90" y="340" font-size="62" font-weight="700" font-family="Arial, Tahoma, sans-serif" fill="#14213d">${safeLabel}</text>
+          <text x="90" y="410" font-size="26" font-family="Arial, Tahoma, sans-serif" fill="#6b7280">No custom cover available</text>
+        </svg>
+      `.trim();
+
+      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    }
+
+    function getAutoCoverUrl() {
+      const manual = coverImageUrlEl.value.trim();
+      if (manual) return manual;
+
+      for (const file of currentFiles) {
+        const thumb = String(file?.thumbnail_url || "").trim();
+        if (thumb) return thumb;
+      }
+
+      return makePlaceholderCoverDataUrl(currentTitle || titleEl.value.trim() || "Lecture");
+    }
+
+    function renderCover() {
+      const url = getAutoCoverUrl();
+
       if (!url) {
         coverPreviewBox.innerHTML = `<div class="empty">لا توجد صورة غلاف.</div>`;
         return;
@@ -391,6 +431,7 @@
       if (index <= 0) return;
       [currentFiles[index - 1], currentFiles[index]] = [currentFiles[index], currentFiles[index - 1]];
       renderFiles(currentFiles);
+      renderCover();
     }
 
     function moveFileDown(id) {
@@ -398,6 +439,7 @@
       if (index === -1 || index >= currentFiles.length - 1) return;
       [currentFiles[index + 1], currentFiles[index]] = [currentFiles[index], currentFiles[index + 1]];
       renderFiles(currentFiles);
+      renderCover();
     }
 
     function renderFiles(files) {
@@ -424,6 +466,7 @@
             </div>
 
             <div class="small">${escapeHtml(file.file_url || "")}</div>
+            <div class="small">${file.thumbnail_url ? `Thumbnail: ${escapeHtml(file.thumbnail_url)}` : "لا يوجد thumbnail لهذا الملف"}</div>
           </div>
 
           <div class="file-actions">
@@ -463,6 +506,7 @@
 
         const item = data.item || {};
 
+        currentTitle = item.title || "";
         titleEl.value = item.title || "";
         speakerEl.value = item.speaker || "";
         lectureDateEl.value = item.lecture_date || "";
@@ -471,9 +515,10 @@
         isPublishedEl.value = String(item.is_published ?? 1);
 
         currentFiles = Array.isArray(item.files) ? item.files : [];
+        serverEffectiveCover = item.effective_cover_image_url || "";
 
-        renderCover(item.cover_image_url || "");
         renderFiles(currentFiles);
+        renderCover();
 
         loadingEl.style.display = "none";
         form.style.display = "block";
@@ -658,7 +703,7 @@
         const coverUrl = data.cover_image_url || "";
         coverImageUrlEl.value = coverUrl;
         coverFileEl.value = "";
-        renderCover(coverUrl);
+        renderCover();
         showStatus("تم رفع الغلاف بنجاح.", "ok");
       } catch (err) {
         showStatus(err.message || "حدث خطأ أثناء رفع الغلاف.", "err");
@@ -671,8 +716,8 @@
     function clearCover() {
       coverImageUrlEl.value = "";
       coverFileEl.value = "";
-      renderCover("");
-      showStatus("تمت إزالة رابط الغلاف الحالي. اضغط حفظ التعديلات لتثبيت الإزالة.", "ok");
+      renderCover();
+      showStatus("تمت إزالة الغلاف المخصص. سيستخدم النظام الغلاف التلقائي بعد الحفظ.", "ok");
     }
 
     async function saveLecture(event) {
@@ -727,7 +772,14 @@
     saveFilesOrderBtn.addEventListener("click", saveFilesOrder);
 
     coverImageUrlEl.addEventListener("input", () => {
-      renderCover(coverImageUrlEl.value.trim());
+      renderCover();
+    });
+
+    titleEl.addEventListener("input", () => {
+      currentTitle = titleEl.value.trim();
+      if (!coverImageUrlEl.value.trim()) {
+        renderCover();
+      }
     });
 
     window.deleteFile = deleteFile;
