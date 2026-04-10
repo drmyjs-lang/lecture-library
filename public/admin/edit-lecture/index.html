@@ -100,7 +100,8 @@
     input[type="text"],
     input[type="date"],
     textarea,
-    select{
+    select,
+    input[type="file"]{
       width:100%;
       border:1px solid var(--line);
       border-radius:14px;
@@ -204,6 +205,11 @@
       color:var(--red);
     }
 
+    .btn-success{
+      background:#dcfce7;
+      color:#166534;
+    }
+
     .empty{
       color:var(--muted);
       font-size:14px;
@@ -227,7 +233,7 @@
   <div class="wrap">
     <div class="card">
       <h1>تعديل المحاضرة</h1>
-      <div class="sub">تعديل البيانات الأساسية وإدارة الملفات الحالية.</div>
+      <div class="sub">تعديل البيانات الأساسية، رفع أو حذف الغلاف، حذف الملفات الحالية، وإضافة ملفات جديدة.</div>
 
       <div id="status" class="status"></div>
       <div id="loading" class="loading">جاري تحميل البيانات...</div>
@@ -274,11 +280,37 @@
           <div class="box">
             <div class="box-title">معاينة الغلاف</div>
             <div id="coverPreviewBox" class="empty">لا توجد صورة غلاف.</div>
+
+            <div style="margin-top:16px;">
+              <label for="cover_file">رفع صورة غلاف من الكمبيوتر</label>
+              <input id="cover_file" name="cover_file" type="file" accept="image/*" />
+              <div class="small" style="margin-top:8px;">
+                بعد اختيار الصورة اضغط زر رفع الغلاف. سيتم تحديث رابط الغلاف تلقائيًا.
+              </div>
+
+              <div class="actions" style="margin-top:14px;">
+                <button id="uploadCoverBtn" class="btn-success" type="button">رفع الغلاف</button>
+                <button id="clearCoverBtn" class="btn-danger" type="button">إزالة الغلاف الحالي</button>
+              </div>
+            </div>
           </div>
 
           <div class="box">
             <div class="box-title">الملفات الحالية</div>
             <div id="filesBox" class="empty">لا توجد ملفات.</div>
+          </div>
+
+          <div class="box">
+            <div class="box-title">إضافة ملفات جديدة</div>
+            <label for="new_files">اختر الملفات من الكمبيوتر</label>
+            <input id="new_files" name="new_files" type="file" multiple />
+            <div class="small" style="margin-top:8px;">
+              يمكن اختيار أكثر من ملف مرة واحدة. سيتم حفظ اسم الملف الأصلي تلقائيًا.
+            </div>
+
+            <div class="actions" style="margin-top:14px;">
+              <button id="uploadFilesBtn" class="btn-success" type="button">رفع الملفات الجديدة</button>
+            </div>
           </div>
         </div>
 
@@ -295,6 +327,9 @@
     const loadingEl = document.getElementById("loading");
     const form = document.getElementById("editForm");
     const saveBtn = document.getElementById("saveBtn");
+    const uploadFilesBtn = document.getElementById("uploadFilesBtn");
+    const uploadCoverBtn = document.getElementById("uploadCoverBtn");
+    const clearCoverBtn = document.getElementById("clearCoverBtn");
 
     const titleEl = document.getElementById("title");
     const speakerEl = document.getElementById("speaker");
@@ -302,6 +337,8 @@
     const descriptionEl = document.getElementById("description");
     const coverImageUrlEl = document.getElementById("cover_image_url");
     const isPublishedEl = document.getElementById("is_published");
+    const newFilesEl = document.getElementById("new_files");
+    const coverFileEl = document.getElementById("cover_file");
 
     const coverPreviewBox = document.getElementById("coverPreviewBox");
     const filesBox = document.getElementById("filesBox");
@@ -423,6 +460,94 @@
       }
     }
 
+    async function uploadNewFiles() {
+      try {
+        hideStatus();
+
+        const files = newFilesEl.files;
+        if (!files || !files.length) {
+          throw new Error("اختر ملفًا واحدًا على الأقل.");
+        }
+
+        uploadFilesBtn.disabled = true;
+        uploadFilesBtn.textContent = "جاري رفع الملفات...";
+
+        const formData = new FormData();
+        formData.append("lecture_id", String(lectureId));
+
+        for (const file of files) {
+          formData.append("files", file);
+        }
+
+        const res = await fetch("/api/admin-add-files", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر رفع الملفات.");
+        }
+
+        newFilesEl.value = "";
+        showStatus("تمت إضافة الملفات الجديدة بنجاح.", "ok");
+        await loadLecture();
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء رفع الملفات.", "err");
+      } finally {
+        uploadFilesBtn.disabled = false;
+        uploadFilesBtn.textContent = "رفع الملفات الجديدة";
+      }
+    }
+
+    async function uploadCover() {
+      try {
+        hideStatus();
+
+        const file = coverFileEl.files && coverFileEl.files[0];
+        if (!file) {
+          throw new Error("اختر صورة غلاف أولًا.");
+        }
+
+        uploadCoverBtn.disabled = true;
+        uploadCoverBtn.textContent = "جاري رفع الغلاف...";
+
+        const formData = new FormData();
+        formData.append("lecture_id", String(lectureId));
+        formData.append("cover", file);
+
+        const res = await fetch("/api/admin-upload-cover", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر رفع الغلاف.");
+        }
+
+        const coverUrl = data.cover_image_url || "";
+        coverImageUrlEl.value = coverUrl;
+        coverFileEl.value = "";
+        renderCover(coverUrl);
+        showStatus("تم رفع الغلاف بنجاح.", "ok");
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء رفع الغلاف.", "err");
+      } finally {
+        uploadCoverBtn.disabled = false;
+        uploadCoverBtn.textContent = "رفع الغلاف";
+      }
+    }
+
+    function clearCover() {
+      coverImageUrlEl.value = "";
+      coverFileEl.value = "";
+      renderCover("");
+      showStatus("تمت إزالة رابط الغلاف الحالي. اضغط حفظ التعديلات لتثبيت الإزالة.", "ok");
+    }
+
     async function saveLecture(event) {
       event.preventDefault();
 
@@ -469,6 +594,14 @@
     }
 
     form.addEventListener("submit", saveLecture);
+    uploadFilesBtn.addEventListener("click", uploadNewFiles);
+    uploadCoverBtn.addEventListener("click", uploadCover);
+    clearCoverBtn.addEventListener("click", clearCover);
+
+    coverImageUrlEl.addEventListener("input", () => {
+      renderCover(coverImageUrlEl.value.trim());
+    });
+
     window.deleteFile = deleteFile;
 
     loadLecture();
