@@ -4,309 +4,579 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>لوحة إدارة مكتبة المحاضرات</title>
+  <meta name="theme-color" content="#2563eb" />
   <style>
     :root{
-      --bg:#f3f6fb;
-      --card:#ffffff;
-      --text:#14213d;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --blue:#2563eb;
-      --blue2:#1d4ed8;
-      --red:#dc2626;
-      --green:#16a34a;
-      --shadow:0 10px 30px rgba(0,0,0,.08);
-      --radius:18px;
+      --bg: #f5f7fb;
+      --card: rgba(255,255,255,0.86);
+      --card-solid: #ffffff;
+      --text: #14213d;
+      --muted: #667085;
+      --line: rgba(15, 23, 42, 0.08);
+      --blue: #2563eb;
+      --blue-2: #1d4ed8;
+      --blue-soft: #dbeafe;
+      --blue-tint: #eff6ff;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+      --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Tahoma, Arial, sans-serif;
+      --max: 1280px;
     }
 
-    *{box-sizing:border-box}
+    *{
+      box-sizing:border-box;
+    }
+
+    html{
+      scroll-behavior:smooth;
+    }
 
     body{
       margin:0;
-      font-family:Tahoma, Arial, sans-serif;
-      background:var(--bg);
+      font-family:var(--font-stack);
       color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 26%),
+        radial-gradient(circle at top right, rgba(37,99,235,0.06), transparent 22%),
+        linear-gradient(180deg, #f8fbff 0%, #f5f7fb 100%);
+      min-height:100vh;
     }
 
-    .wrap{
-      max-width:1150px;
-      margin:40px auto;
-      padding:0 16px;
-    }
-
-    .topbar,
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-    }
-
-    .topbar{
-      padding:18px 20px;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
-      margin-bottom:20px;
-    }
-
-    .title h1{
-      margin:0;
-      font-size:30px;
-    }
-
-    .title p{
-      margin:8px 0 0;
-      color:var(--muted);
-      font-size:15px;
-    }
-
-    .actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    .card{
-      padding:20px;
-    }
-
-    .toolbar{
-      display:grid;
-      grid-template-columns:1fr auto auto;
-      gap:12px;
-      align-items:center;
-      margin-bottom:18px;
-    }
-
-    .search{
-      width:100%;
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:14px;
-      padding:13px 15px;
-      font-size:15px;
-      outline:none;
-      font-family:inherit;
-    }
-
-    .search:focus{
-      border-color:var(--blue);
-    }
-
-    .badge{
-      background:#eef2ff;
-      color:var(--blue);
-      border:1px solid #c7d2fe;
-      border-radius:999px;
-      padding:10px 14px;
-      font-size:14px;
-      white-space:nowrap;
-    }
-
-    .status{
-      display:none;
-      margin-bottom:16px;
-      padding:14px 16px;
-      border-radius:14px;
-      font-size:15px;
-    }
-
-    .status.show{display:block}
-    .status.ok{
-      background:#dcfce7;
-      color:#166534;
-      border:1px solid #bbf7d0;
-    }
-    .status.err{
-      background:#fee2e2;
-      color:#991b1b;
-      border:1px solid #fecaca;
-    }
-
-    .list{
-      display:grid;
-      gap:14px;
-    }
-
-    .lecture{
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:16px;
-      display:grid;
-      grid-template-columns:160px 1fr;
-      gap:16px;
-      background:#fff;
-    }
-
-    .thumb{
-      width:160px;
-      height:160px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:#f8fafc center/cover no-repeat;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#9ca3af;
-      text-align:center;
-      padding:8px;
-      overflow:hidden;
-    }
-
-    .lecture h3{
-      margin:0 0 10px;
-      font-size:24px;
-    }
-
-    .meta{
-      display:grid;
-      gap:6px;
-      color:var(--muted);
-      margin-bottom:12px;
-      font-size:14px;
-    }
-
-    .desc{
-      white-space:pre-wrap;
-      line-height:1.9;
-      margin-bottom:14px;
-      font-size:15px;
-    }
-
-    .files{
-      border:1px dashed var(--line);
-      border-radius:14px;
-      padding:12px;
-      margin-bottom:14px;
-      background:#fafafa;
-    }
-
-    .file-row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px 0;
-      border-bottom:1px solid #eee;
-      flex-wrap:wrap;
-    }
-
-    .file-row:last-child{
-      border-bottom:none;
-    }
-
-    .file-name{
-      font-size:14px;
-      word-break:break-word;
-    }
-
-    .lecture-actions,
-    .file-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    button,
-    a.btn{
-      border:none;
-      border-radius:14px;
-      padding:10px 16px;
-      font-size:14px;
-      cursor:pointer;
+    a{
+      color:inherit;
       text-decoration:none;
+    }
+
+    .shell{
+      max-width:var(--max);
+      margin:0 auto;
+      padding:28px 18px 60px;
+    }
+
+    .hero{
+      position:relative;
+      overflow:hidden;
+      background:linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border:1px solid rgba(255,255,255,0.72);
+      box-shadow:var(--shadow);
+      border-radius:36px;
+      padding:30px;
+      display:grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap:28px;
+      align-items:center;
+      margin-bottom:26px;
+    }
+
+    .hero::before{
+      content:"";
+      position:absolute;
+      inset:auto -90px -120px auto;
+      width:280px;
+      height:280px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(37,99,235,0.14), transparent 65%);
+      pointer-events:none;
+    }
+
+    .hero::after{
+      content:"";
+      position:absolute;
+      inset:-80px auto auto -80px;
+      width:220px;
+      height:220px;
+      border-radius:50%;
+      background:radial-gradient(circle, rgba(37,99,235,0.08), transparent 65%);
+      pointer-events:none;
+    }
+
+    .hero-copy{
+      position:relative;
+      z-index:1;
+    }
+
+    .hero-title{
+      margin:0;
+      font-size:clamp(30px, 5vw, 54px);
+      line-height:1.04;
+      letter-spacing:-0.03em;
+      font-weight:800;
+    }
+
+    .hero-sub{
+      margin:14px 0 0;
+      font-size:17px;
+      color:var(--muted);
+      line-height:1.9;
+      max-width:720px;
+    }
+
+    .hero-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:24px;
+    }
+
+    .btn{
+      border:none;
+      border-radius:999px;
+      padding:13px 18px;
+      font-size:14px;
+      font-weight:700;
+      cursor:pointer;
       display:inline-flex;
       align-items:center;
       justify-content:center;
       gap:8px;
+      transition:transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
       font-family:inherit;
     }
 
-    .btn-light{
-      background:#eef2ff;
-      color:var(--blue);
+    .btn:hover{
+      transform:translateY(-1px);
+    }
+
+    .btn-primary{
+      background:linear-gradient(180deg, var(--blue), var(--blue-2));
+      color:#fff;
+      box-shadow:0 10px 24px rgba(37,99,235,0.24);
+    }
+
+    .btn-secondary{
+      background:#fff;
+      color:var(--text);
+      border:1px solid var(--line);
+      box-shadow:var(--shadow-soft);
     }
 
     .btn-danger{
-      background:#fee2e2;
+      background:var(--red-soft);
       color:var(--red);
+      border:1px solid rgba(220,38,38,0.08);
+      box-shadow:var(--shadow-soft);
     }
 
     .btn-success{
-      background:#dcfce7;
+      background:var(--green-soft);
       color:var(--green);
+      border:1px solid rgba(22,163,74,0.08);
+      box-shadow:var(--shadow-soft);
+    }
+
+    .hero-brand{
+      position:relative;
+      z-index:1;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+
+    .hero-brand-card{
+      width:100%;
+      max-width:430px;
+      min-height:240px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,0.72);
+      border:1px solid rgba(255,255,255,0.82);
+      border-radius:30px;
+      padding:22px;
+      box-shadow:var(--shadow-soft);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .hero-logo{
+      display:block;
+      width:100%;
+      max-height:220px;
+      object-fit:contain;
+      border-radius:18px;
+      background:transparent;
+      padding:0;
+    }
+
+    .toolbar{
+      background:rgba(255,255,255,0.74);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border:1px solid rgba(255,255,255,0.78);
+      border-radius:28px;
+      box-shadow:var(--shadow-soft);
+      padding:16px;
+      display:grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap:14px;
+      align-items:center;
+      margin-bottom:28px;
+    }
+
+    .search-wrap{
+      position:relative;
+    }
+
+    .search-wrap svg{
+      position:absolute;
+      right:16px;
+      top:50%;
+      transform:translateY(-50%);
+      width:18px;
+      height:18px;
+      color:#94a3b8;
+      pointer-events:none;
+    }
+
+    .search{
+      width:100%;
+      min-height:54px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.92);
+      padding:0 46px 0 18px;
+      font-size:16px;
+      outline:none;
+      color:var(--text);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+      font-family:inherit;
+    }
+
+    .search:focus{
+      border-color:rgba(37,99,235,0.35);
+      box-shadow:0 0 0 4px rgba(37,99,235,0.10);
+    }
+
+    .stat{
+      min-height:54px;
+      border-radius:18px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,0.92);
+      padding:0 16px;
+      font-size:15px;
+      color:var(--blue);
+      display:flex;
+      align-items:center;
+      white-space:nowrap;
+      font-weight:800;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+    }
+
+    .status{
+      display:none;
+      margin-bottom:18px;
+      padding:16px 18px;
+      border-radius:20px;
+      font-size:15px;
+      box-shadow:var(--shadow-soft);
+      background:rgba(255,255,255,0.82);
+      border:1px solid rgba(255,255,255,0.76);
+    }
+
+    .status.show{
+      display:block;
+    }
+
+    .status.ok{
+      background:var(--green-soft);
+      color:#166534;
+      border-color:rgba(22,163,74,0.08);
+    }
+
+    .status.err{
+      background:var(--red-soft);
+      color:#991b1b;
+      border-color:rgba(220,38,38,0.08);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:20px;
+    }
+
+    .card{
+      display:flex;
+      flex-direction:column;
+      min-height:100%;
+      background:var(--card);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border:1px solid rgba(255,255,255,0.78);
+      border-radius:28px;
+      overflow:hidden;
+      box-shadow:var(--shadow-soft);
+      transition:transform .18s ease, box-shadow .18s ease;
+    }
+
+    .card:hover{
+      transform:translateY(-3px);
+      box-shadow:0 18px 40px rgba(15, 23, 42, 0.10);
+    }
+
+    .cover{
+      position:relative;
+      aspect-ratio:16 / 9;
+      background:#f8fafc center/cover no-repeat;
+      border-bottom:1px solid rgba(15, 23, 42, 0.06);
+    }
+
+    .cover::after{
+      content:"";
+      position:absolute;
+      inset:auto 0 0 0;
+      height:55%;
+      background:linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.12));
+      pointer-events:none;
+    }
+
+    .card-body{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      flex:1;
+    }
+
+    .meta-line{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .speaker{
+      font-weight:700;
+      color:var(--blue);
+    }
+
+    .title{
+      margin:0;
+      font-size:30px;
+      letter-spacing:-0.03em;
+      line-height:1.08;
+      font-weight:800;
+    }
+
+    .desc{
+      color:var(--muted);
+      line-height:1.9;
+      font-size:15px;
+      display:-webkit-box;
+      -webkit-line-clamp:4;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      min-height:108px;
+    }
+
+    .files-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-top:auto;
+      padding-top:6px;
+    }
+
+    .files-title{
+      font-size:14px;
+      font-weight:800;
+      color:var(--text);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:var(--blue-tint);
+      color:var(--blue);
+      font-size:12px;
+      font-weight:800;
+      text-transform:uppercase;
+      letter-spacing:0.03em;
+      border:1px solid rgba(37,99,235,0.10);
+    }
+
+    .files-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .file-link{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 14px;
+      background:rgba(255,255,255,0.8);
+      border:1px solid rgba(15, 23, 42, 0.07);
+      border-radius:18px;
+      transition:background .15s ease, border-color .15s ease, transform .15s ease;
+    }
+
+    .file-link:hover{
+      background:#fff;
+      border-color:rgba(37,99,235,0.20);
+      transform:translateY(-1px);
+    }
+
+    .file-text{
+      min-width:0;
+    }
+
+    .file-name{
+      font-size:15px;
+      font-weight:700;
+      line-height:1.5;
+      color:var(--text);
+      word-break:break-word;
+    }
+
+    .file-sub{
+      margin-top:4px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .card-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding-top:10px;
     }
 
     .loading,
     .empty{
-      color:var(--muted);
+      background:rgba(255,255,255,0.74);
+      border:1px solid rgba(255,255,255,0.78);
+      border-radius:28px;
+      box-shadow:var(--shadow-soft);
+      padding:32px 22px;
       text-align:center;
-      padding:24px;
-      border:1px dashed var(--line);
-      border-radius:14px;
-      background:#fafafa;
+      color:var(--muted);
+      font-size:16px;
     }
 
-    @media (max-width:900px){
+    .footer-note{
+      text-align:center;
+      color:var(--muted);
+      font-size:13px;
+      padding-top:30px;
+    }
+
+    @media (max-width: 1120px){
+      .hero{
+        grid-template-columns:1fr;
+      }
+
+      .hero-brand{
+        justify-content:flex-start;
+      }
+
+      .grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width: 860px){
       .toolbar{
         grid-template-columns:1fr;
       }
-    }
 
-    @media (max-width:700px){
-      .lecture{
-        grid-template-columns:1fr;
+      .hero{
+        padding:22px;
       }
 
-      .thumb{
-        width:100%;
-        height:200px;
+      .hero-title{
+        font-size:40px;
+      }
+
+      .stat,
+      .search{
+        min-height:50px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="title">
-        <h1>لوحة إدارة مكتبة المحاضرات</h1>
-        <p>عرض وإدارة المحاضرات مع الملفات المرتبطة بكل محاضرة.</p>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <h1 class="hero-title">لوحة إدارة مكتبة المحاضرات</h1>
+        <p class="hero-sub">إدارة المحاضرات والملفات والبحث والتعديل والحذف بنفس الهوية البصرية للمكتبة العامة.</p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/admin/lecture-upload/">رفع محاضرة جديدة</a>
+          <a class="btn btn-secondary" href="/lecture-library/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
+          <button id="logoutBtn" class="btn btn-danger" type="button">تسجيل الخروج</button>
+        </div>
       </div>
 
-      <div class="actions">
-        <a class="btn btn-light" href="/admin/lecture-upload/">رفع محاضرة جديدة</a>
-        <a class="btn btn-light" href="/lecture-library/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
-        <button id="logoutBtn" class="btn-danger" type="button">تسجيل الخروج</button>
+      <div class="hero-brand">
+        <div class="hero-brand-card">
+          <img
+            class="hero-logo"
+            src="/assets/alahsa-health-cluster-logo.jpg.jpg"
+            alt="Alahsa Health Cluster Logo"
+            onerror="this.style.display='none';"
+          />
+        </div>
       </div>
-    </div>
+    </section>
 
     <div id="status" class="status"></div>
 
-    <div class="card">
-      <div class="toolbar">
-        <input id="searchInput" class="search" type="text" placeholder="ابحث بالعنوان أو الوصف أو المتحدث أو اسم الملف..." />
-        <div id="countBadge" class="badge">إجمالي المحاضرات: 0</div>
-        <div id="filteredBadge" class="badge">المعروض: 0</div>
+    <section class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="M20 20L17 17"></path>
+        </svg>
+        <input
+          id="searchInput"
+          class="search"
+          type="text"
+          placeholder="ابحث بالعنوان أو الوصف أو المتحدث أو اسم الملف..."
+        />
       </div>
 
-      <div id="loading" class="loading">جاري تحميل المحاضرات...</div>
-      <div id="empty" class="empty" style="display:none;">لا توجد محاضرات حاليًا.</div>
-      <div id="list" class="list"></div>
+      <div id="countBadge" class="stat">إجمالي المحاضرات: 0</div>
+      <div id="filteredBadge" class="stat">المعروض: 0</div>
+      <div id="filesBadge" class="stat">إجمالي الملفات: 0</div>
+    </section>
+
+    <div id="loading" class="loading">جاري تحميل المحاضرات...</div>
+    <div id="empty" class="empty" style="display:none;">لا توجد محاضرات حاليًا.</div>
+    <div id="grid" class="grid"></div>
+
+    <div class="footer-note">
+      Powered by Lecture Library Admin
     </div>
   </div>
 
   <script>
     const statusBox = document.getElementById("status");
-    const listEl = document.getElementById("list");
     const loadingEl = document.getElementById("loading");
     const emptyEl = document.getElementById("empty");
-    const logoutBtn = document.getElementById("logoutBtn");
+    const gridEl = document.getElementById("grid");
     const searchInput = document.getElementById("searchInput");
+    const logoutBtn = document.getElementById("logoutBtn");
+
     const countBadge = document.getElementById("countBadge");
     const filteredBadge = document.getElementById("filteredBadge");
+    const filesBadge = document.getElementById("filesBadge");
 
     let allLectures = [];
 
@@ -329,159 +599,161 @@
         .replaceAll("'", "&#039;");
     }
 
-    function formatDate(value) {
-      if (!value) return "—";
-      try {
-        return new Date(value).toLocaleString("ar-SA");
-      } catch {
-        return value;
-      }
+    function clean(value) {
+      return String(value ?? "").trim();
     }
 
-    function pick(...values) {
-      for (const value of values) {
-        if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return value;
-        }
-      }
-      return "";
+    function formatLectureDate(dateString) {
+      if (!dateString) return "No date";
+
+      const date = new Date(dateString);
+      if (Number.isNaN(date.getTime())) return dateString;
+
+      return new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }).format(date);
     }
 
     function normalizeFile(file) {
       return {
-        id: pick(file?.id),
-        file_name: pick(file?.file_name, file?.name),
-        file_type: pick(file?.file_type, file?.type).toLowerCase(),
-        file_url: pick(file?.file_url, file?.url),
-        thumbnail_url: pick(file?.thumbnail_url, file?.thumbnail),
-        file_size: pick(file?.file_size, file?.size)
+        id: Number(file?.id || 0),
+        file_name: clean(file?.file_name),
+        file_type: clean(file?.file_type).toUpperCase() || "FILE",
+        file_url: clean(file?.file_url),
+        thumbnail_url: clean(file?.thumbnail_url),
+        sort_order: Number(file?.sort_order || 0)
       };
     }
 
     function normalizeLecture(item) {
-      const files = Array.isArray(item?.files) ? item.files.map(normalizeFile).filter(f => f.file_url) : [];
+      const files = Array.isArray(item?.files)
+        ? item.files.map(normalizeFile).filter(file => file.file_url)
+        : [];
 
       return {
-        id: pick(item?.id),
-        title: pick(item?.title),
-        description: pick(item?.description),
-        speaker: pick(item?.speaker),
-        lecture_date: pick(item?.lecture_date),
-        created_at: pick(item?.created_at),
-        cover_image_url: pick(item?.cover_image_url, files[0]?.thumbnail_url),
+        id: Number(item?.id || 0),
+        title: clean(item?.title) || "Untitled Lecture",
+        description: clean(item?.description),
+        speaker: clean(item?.speaker) || "Unknown speaker",
+        lecture_date: clean(item?.lecture_date),
+        cover_image_url: clean(item?.cover_image_url),
         files
       };
     }
 
-    function updateCounts(filteredItems) {
-      countBadge.textContent = `إجمالي المحاضرات: ${allLectures.length}`;
-      filteredBadge.textContent = `المعروض: ${filteredItems.length}`;
-    }
-
-    function sortLectures(items) {
-      return [...items].sort((a, b) => {
-        const aDate = new Date(a.created_at || a.lecture_date || 0).getTime();
-        const bDate = new Date(b.created_at || b.lecture_date || 0).getTime();
-        return bDate - aDate;
-      });
-    }
-
-    function matchesSearch(lecture, q) {
-      const haystack = [
+    function lectureSearchText(lecture) {
+      return [
         lecture.title,
         lecture.description,
         lecture.speaker,
         lecture.lecture_date,
-        ...lecture.files.map(f => `${f.file_name} ${f.file_type} ${f.file_url}`)
+        ...lecture.files.map(file => `${file.file_name} ${file.file_type}`)
       ].join(" ").toLowerCase();
-
-      return haystack.includes(q);
     }
 
-    function getFilteredLectures() {
-      const q = searchInput.value.trim().toLowerCase();
-      const normalized = allLectures.map(normalizeLecture);
+    function sortLectures(items) {
+      return [...items].sort((a, b) => {
+        const aTime = new Date(a.lecture_date || 0).getTime();
+        const bTime = new Date(b.lecture_date || 0).getTime();
+        return bTime - aTime;
+      });
+    }
 
-      if (!q) return sortLectures(normalized);
-      return sortLectures(normalized.filter(item => matchesSearch(item, q)));
+    function updateStats(filtered) {
+      const totalFiles = allLectures.reduce((sum, lecture) => sum + lecture.files.length, 0);
+      const filteredFiles = filtered.reduce((sum, lecture) => sum + lecture.files.length, 0);
+
+      countBadge.textContent = `إجمالي المحاضرات: ${allLectures.length}`;
+      filteredBadge.textContent = `المعروض: ${filtered.length}`;
+      filesBadge.textContent = `إجمالي الملفات: ${filteredFiles}/${totalFiles}`;
     }
 
     function renderFiles(files) {
       if (!files.length) {
         return `
-          <div class="files">
-            <div class="file-name">لا يوجد ملف مرتبط بهذه المحاضرة.</div>
+          <div class="files-list">
+            <div class="file-link">
+              <div class="file-text">
+                <div class="file-name">لا توجد ملفات</div>
+              </div>
+            </div>
           </div>
         `;
       }
 
       return `
-        <div class="files">
-          ${files.map((file, index) => `
-            <div class="file-row">
-              <div class="file-name">
-                <strong>ملف ${files.length > 1 ? index + 1 : ""}:</strong>
-                ${escapeHtml(file.file_name || file.file_url)}
-                ${file.file_type ? `(${escapeHtml(file.file_type.toUpperCase())})` : ""}
+        <div class="files-list">
+          ${files.map((file) => `
+            <a class="file-link" href="${escapeHtml(file.file_url)}" target="_blank" rel="noopener">
+              <div class="file-text">
+                <div class="file-name">${escapeHtml(file.file_name || "Open file")}</div>
+                <div class="file-sub">${escapeHtml(file.file_type || "FILE")}</div>
               </div>
-              <div class="file-actions">
-                <a class="btn btn-success" href="${escapeHtml(file.file_url)}" target="_blank" rel="noopener">فتح الملف</a>
-                <button class="btn btn-light" type="button" onclick='copyText(${JSON.stringify(file.file_url)})'>نسخ الرابط</button>
-              </div>
-            </div>
+              <span class="badge">${escapeHtml(file.file_type || "FILE")}</span>
+            </a>
           `).join("")}
         </div>
       `;
     }
 
-    function renderLectures(items) {
-      loadingEl.style.display = "none";
-      listEl.innerHTML = "";
-      updateCounts(items);
+    function renderLectures() {
+      const query = searchInput.value.trim().toLowerCase();
 
-      if (!items.length) {
+      const filtered = sortLectures(
+        allLectures.filter((lecture) => {
+          if (!query) return true;
+          return lectureSearchText(lecture).includes(query);
+        })
+      );
+
+      updateStats(filtered);
+      gridEl.innerHTML = "";
+
+      if (!filtered.length) {
         emptyEl.style.display = "block";
         return;
       }
 
       emptyEl.style.display = "none";
 
-      items.forEach((lecture) => {
+      for (const lecture of filtered) {
         const card = document.createElement("article");
-        card.className = "lecture";
-
-        const cover = lecture.cover_image_url || "";
-        const thumbStyle = cover ? `background-image:url('${String(cover).replaceAll("'", "%27")}')` : "";
+        card.className = "card";
 
         card.innerHTML = `
-          <div class="thumb" style="${thumbStyle}">
-            ${cover ? "" : "بدون صورة"}
-          </div>
+          <div
+            class="cover"
+            style="background-image:url('${String(lecture.cover_image_url || "").replaceAll("'", "%27")}')"
+          ></div>
 
-          <div>
-            <h3>${escapeHtml(lecture.title || "بدون عنوان")}</h3>
-
-            <div class="meta">
-              <div><strong>التاريخ:</strong> ${escapeHtml(lecture.lecture_date || "—")}</div>
-              <div><strong>المتحدث:</strong> ${escapeHtml(lecture.speaker || "—")}</div>
-              <div><strong>أضيفت في:</strong> ${escapeHtml(formatDate(lecture.created_at))}</div>
-              <div><strong>المعرف:</strong> ${escapeHtml(lecture.id || "—")}</div>
-              <div><strong>عدد الملفات:</strong> ${lecture.files.length}</div>
+          <div class="card-body">
+            <div class="meta-line">
+              <span class="speaker">${escapeHtml(lecture.speaker)}</span>
+              <span>${escapeHtml(formatLectureDate(lecture.lecture_date))}</span>
             </div>
+
+            <h3 class="title">${escapeHtml(lecture.title)}</h3>
 
             <div class="desc">${escapeHtml(lecture.description || "لا يوجد وصف.")}</div>
 
+            <div class="files-head">
+              <div class="files-title">الملفات (${lecture.files.length})</div>
+              ${lecture.files[0] ? `<span class="badge">${escapeHtml(lecture.files[0].file_type || "FILE")}</span>` : ""}
+            </div>
+
             ${renderFiles(lecture.files)}
 
-            <div class="lecture-actions">
-              <button class="btn-light" type="button" onclick="window.location.href='/admin/edit-lecture/?id=${Number(lecture.id)}'">تعديل</button>
-              <button class="btn-danger" type="button" onclick="deleteLecture(${Number(lecture.id)})">حذف</button>
+            <div class="card-actions">
+              <a class="btn btn-secondary" href="/admin/edit-lecture/?id=${Number(lecture.id)}">تعديل</a>
+              <button class="btn btn-danger" type="button" onclick="deleteLecture(${Number(lecture.id)})">حذف</button>
             </div>
           </div>
         `;
 
-        listEl.appendChild(card);
-      });
+        gridEl.appendChild(card);
+      }
     }
 
     async function loadLectures() {
@@ -489,21 +761,25 @@
         hideStatus();
         loadingEl.style.display = "block";
         emptyEl.style.display = "none";
-        listEl.innerHTML = "";
+        gridEl.innerHTML = "";
 
         const res = await fetch("/api/lectures?published=all");
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
           throw new Error(data?.error || "تعذر تحميل المحاضرات.");
         }
 
-        allLectures = Array.isArray(data.items) ? data.items : [];
-        renderLectures(getFilteredLectures());
-      } catch (err) {
+        allLectures = Array.isArray(data.items)
+          ? data.items.map(normalizeLecture)
+          : [];
+
         loadingEl.style.display = "none";
-        updateCounts([]);
-        showStatus(err.message || "حدث خطأ أثناء تحميل المحاضرات.", "err");
+        renderLectures();
+      } catch (error) {
+        loadingEl.style.display = "none";
+        emptyEl.style.display = "block";
+        emptyEl.textContent = error.message || "حدث خطأ أثناء تحميل المحاضرات.";
       }
     }
 
@@ -514,7 +790,9 @@
       try {
         const res = await fetch("/api/admin-delete-lecture", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({ id })
         });
 
@@ -525,18 +803,19 @@
         }
 
         allLectures = allLectures.filter(item => Number(item.id) !== Number(id));
-        renderLectures(getFilteredLectures());
+        renderLectures();
         showStatus("تم حذف المحاضرة بنجاح.", "ok");
-      } catch (err) {
-        showStatus(err.message || "حدث خطأ أثناء حذف المحاضرة.", "err");
+      } catch (error) {
+        showStatus(error.message || "حدث خطأ أثناء حذف المحاضرة.", "err");
       }
     }
 
     async function logout() {
       try {
-        logoutBtn.disabled = true;
+        const res = await fetch("/api/admin-logout", {
+          method: "POST"
+        });
 
-        const res = await fetch("/api/admin-logout", { method: "POST" });
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
@@ -544,30 +823,15 @@
         }
 
         window.location.href = "/admin/login/";
-      } catch (err) {
-        showStatus(err.message || "حدث خطأ أثناء تسجيل الخروج.", "err");
-      } finally {
-        logoutBtn.disabled = false;
+      } catch (error) {
+        showStatus(error.message || "حدث خطأ أثناء تسجيل الخروج.", "err");
       }
     }
 
-    async function copyText(value) {
-      try {
-        await navigator.clipboard.writeText(String(value || ""));
-        showStatus("تم نسخ الرابط.", "ok");
-      } catch {
-        showStatus("تعذر نسخ الرابط.", "err");
-      }
-    }
-
-    searchInput.addEventListener("input", () => {
-      renderLectures(getFilteredLectures());
-    });
-
+    searchInput.addEventListener("input", renderLectures);
     logoutBtn.addEventListener("click", logout);
 
     window.deleteLecture = deleteLecture;
-    window.copyText = copyText;
 
     loadLectures();
   </script>
