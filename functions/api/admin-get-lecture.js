@@ -95,6 +95,7 @@ function normalizeStoredFile(file) {
     file_size: Number(file?.file_size || 0),
     file_url: String(file?.file_url || "").trim(),
     thumbnail_url: String(file?.thumbnail_url || "").trim(),
+    sort_order: Number(file?.sort_order || 0),
     created_at: file?.created_at || null,
   };
 }
@@ -146,10 +147,11 @@ export async function onRequestGet(context) {
         file_size,
         file_url,
         thumbnail_url,
+        sort_order,
         created_at
       FROM lecture_files
       WHERE lecture_id = ?
-      ORDER BY created_at DESC, id DESC
+      ORDER BY sort_order ASC, created_at DESC, id DESC
     `)
       .bind(id)
       .all();
