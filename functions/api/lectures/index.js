@@ -112,6 +112,7 @@ function normalizeStoredFile(file) {
     file_size: Number(file?.file_size || 0),
     file_url: String(file?.file_url || "").trim(),
     thumbnail_url: String(file?.thumbnail_url || "").trim(),
+    sort_order: Number(file?.sort_order || 0),
     created_at: file?.created_at || null,
   };
 }
@@ -217,10 +218,11 @@ export async function onRequestGet(context) {
         file_size,
         file_url,
         thumbnail_url,
+        sort_order,
         created_at
       FROM lecture_files
       WHERE lecture_id IN (${placeholders})
-      ORDER BY created_at DESC, id DESC
+      ORDER BY sort_order ASC, created_at DESC, id DESC
     `)
       .bind(...lectureIds)
       .all();
@@ -320,7 +322,7 @@ export async function onRequestPost(context) {
     }
 
     if (files.length) {
-      const statements = files.map((file) =>
+      const statements = files.map((file, index) =>
         env.DB.prepare(`
           INSERT INTO lecture_files (
             lecture_id,
@@ -328,15 +330,17 @@ export async function onRequestPost(context) {
             file_type,
             file_size,
             file_url,
-            thumbnail_url
-          ) VALUES (?, ?, ?, ?, ?, ?)
+            thumbnail_url,
+            sort_order
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `).bind(
           lectureId,
           file.file_name,
           file.file_type,
           Number.isFinite(file.file_size) ? file.file_size : 0,
           file.file_url,
-          file.thumbnail_url
+          file.thumbnail_url,
+          index + 1
         )
       );
 
@@ -371,10 +375,11 @@ export async function onRequestPost(context) {
         file_size,
         file_url,
         thumbnail_url,
+        sort_order,
         created_at
       FROM lecture_files
       WHERE lecture_id = ?
-      ORDER BY created_at DESC, id DESC
+      ORDER BY sort_order ASC, created_at DESC, id DESC
     `)
       .bind(lectureId)
       .all();
