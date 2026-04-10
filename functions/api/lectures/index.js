@@ -41,18 +41,98 @@ function normalizeSort(sort) {
   return sort === "oldest" ? "ASC" : "DESC";
 }
 
+function getExt(value = "") {
+  const clean = String(value || "").trim().toLowerCase().split("?")[0].split("#")[0];
+  const lastDot = clean.lastIndexOf(".");
+  if (lastDot === -1) return "";
+  return clean.slice(lastDot + 1);
+}
+
+function normalizeType(type = "") {
+  const t = String(type || "").trim().toLowerCase();
+
+  if (!t) return "";
+  if (["other", "file", "unknown", "bin"].includes(t)) return "";
+
+  const aliases = {
+    jpeg: "jpg",
+    powerpoint: "ppt",
+    powerpointx: "pptx",
+    word: "doc",
+  };
+
+  return aliases[t] || t;
+}
+
+function inferTypeFromExt(ext = "") {
+  const e = String(ext || "").trim().toLowerCase();
+
+  const map = {
+    pdf: "pdf",
+    ppt: "ppt",
+    pptx: "pptx",
+    doc: "doc",
+    docx: "docx",
+    xls: "xls",
+    xlsx: "xlsx",
+    jpg: "jpg",
+    jpeg: "jpg",
+    png: "png",
+    webp: "webp",
+    gif: "gif",
+    mp4: "mp4",
+    mp3: "mp3",
+    zip: "zip",
+    rar: "rar",
+    txt: "txt",
+  };
+
+  return map[e] || "";
+}
+
+function inferFileType(rawType, fileName, fileUrl) {
+  const direct = normalizeType(rawType);
+  if (direct) return direct;
+
+  const fromName = inferTypeFromExt(getExt(fileName));
+  if (fromName) return fromName;
+
+  const fromUrl = inferTypeFromExt(getExt(fileUrl));
+  if (fromUrl) return fromUrl;
+
+  return "file";
+}
+
+function normalizeStoredFile(file) {
+  return {
+    id: file?.id ?? null,
+    lecture_id: file?.lecture_id ?? null,
+    file_name: String(file?.file_name || "").trim(),
+    file_type: inferFileType(file?.file_type, file?.file_name, file?.file_url),
+    file_size: Number(file?.file_size || 0),
+    file_url: String(file?.file_url || "").trim(),
+    thumbnail_url: String(file?.thumbnail_url || "").trim(),
+    created_at: file?.created_at || null,
+  };
+}
+
 function validateFiles(files) {
   if (!Array.isArray(files)) return [];
 
   return files
     .filter((f) => f && typeof f === "object")
-    .map((f) => ({
-      file_name: String(f.file_name || "").trim(),
-      file_type: String(f.file_type || "").trim().toLowerCase(),
-      file_size: Number(f.file_size || 0),
-      file_url: String(f.file_url || "").trim(),
-      thumbnail_url: String(f.thumbnail_url || "").trim(),
-    }))
+    .map((f) => {
+      const file_name = String(f.file_name || "").trim();
+      const file_url = String(f.file_url || "").trim();
+
+      return {
+        file_name,
+        file_type: inferFileType(f.file_type, file_name, file_url),
+        file_size: Number(f.file_size || 0),
+        file_url,
+        thumbnail_url: String(f.thumbnail_url || "").trim(),
+      };
+    })
     .filter((f) => f.file_name && f.file_url);
 }
 
@@ -145,7 +225,7 @@ export async function onRequestGet(context) {
       .bind(...lectureIds)
       .all();
 
-    const files = filesResult.results || [];
+    const files = (filesResult.results || []).map(normalizeStoredFile);
     const filesByLectureId = new Map();
 
     for (const file of files) {
@@ -282,7 +362,7 @@ export async function onRequestPost(context) {
       .bind(lectureId)
       .first();
 
-    const insertedFiles = await env.DB.prepare(`
+    const insertedFilesRaw = await env.DB.prepare(`
       SELECT
         id,
         lecture_id,
@@ -299,12 +379,14 @@ export async function onRequestPost(context) {
       .bind(lectureId)
       .all();
 
+    const insertedFiles = (insertedFilesRaw.results || []).map(normalizeStoredFile);
+
     return json(
       {
         ok: true,
         item: {
           ...lecture,
-          files: insertedFiles.results || [],
+          files: insertedFiles,
         },
       },
       201
