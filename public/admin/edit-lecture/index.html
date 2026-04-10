@@ -29,7 +29,7 @@
     }
 
     .wrap{
-      max-width:950px;
+      max-width:980px;
       margin:40px auto;
       padding:0 16px;
     }
@@ -73,8 +73,19 @@
       border:1px solid #fecaca;
     }
 
+    .loading{
+      color:var(--muted);
+      padding:8px 0 18px;
+    }
+
     .grid{
       display:grid;
+      gap:16px;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
       gap:16px;
     }
 
@@ -87,8 +98,9 @@
     }
 
     input[type="text"],
-    input[type="url"],
-    textarea{
+    input[type="date"],
+    textarea,
+    select{
       width:100%;
       border:1px solid var(--line);
       border-radius:14px;
@@ -99,35 +111,67 @@
       background:#fff;
     }
 
-    input[type="text"]:focus,
-    input[type="url"]:focus,
-    textarea:focus{
+    input:focus,
+    textarea:focus,
+    select:focus{
       border-color:var(--blue);
     }
 
-    input[type="file"]{
-      width:100%;
-      border:1px dashed var(--line);
-      border-radius:14px;
-      padding:14px;
-      background:#fff;
-      font-family:inherit;
-    }
-
     textarea{
-      min-height:160px;
+      min-height:150px;
       resize:vertical;
       line-height:1.8;
     }
 
-    .actions{
+    .box{
+      border:1px solid var(--line);
+      border-radius:16px;
+      background:#fafafa;
+      padding:14px;
+    }
+
+    .box-title{
+      font-weight:bold;
+      margin-bottom:10px;
+    }
+
+    .cover-preview{
+      width:100%;
+      max-width:280px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      display:block;
+      background:#fff;
+    }
+
+    .file-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 0;
+      border-bottom:1px solid #ececec;
+      flex-wrap:wrap;
+    }
+
+    .file-row:last-child{
+      border-bottom:none;
+    }
+
+    .file-name{
+      font-size:14px;
+      word-break:break-word;
+    }
+
+    .actions,
+    .file-actions{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
-      margin-top:10px;
     }
 
-    button, a.btn{
+    button,
+    a.btn{
       border:none;
       border-radius:14px;
       padding:12px 18px;
@@ -155,45 +199,27 @@
       color:var(--blue);
     }
 
-    .loading{
+    .btn-danger{
+      background:#fee2e2;
+      color:var(--red);
+    }
+
+    .empty{
       color:var(--muted);
-      padding:8px 0 18px;
-    }
-
-    .box{
-      border:1px solid var(--line);
-      border-radius:16px;
-      background:#fafafa;
-      padding:14px;
-    }
-
-    .box-title{
-      font-weight:bold;
-      margin-bottom:10px;
-    }
-
-    .preview-img{
-      width:100%;
-      max-width:280px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      display:block;
-      background:#fff;
+      font-size:14px;
     }
 
     .small{
       color:var(--muted);
       font-size:13px;
       line-height:1.8;
+      word-break:break-word;
     }
 
-    .check{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      margin-top:10px;
-      font-size:14px;
-      color:var(--text);
+    @media (max-width:760px){
+      .grid-2{
+        grid-template-columns:1fr;
+      }
     }
   </style>
 </head>
@@ -201,7 +227,7 @@
   <div class="wrap">
     <div class="card">
       <h1>تعديل المحاضرة</h1>
-      <div class="sub">يمكنك تعديل البيانات أو رفع ملف وصورة جديدين من الكمبيوتر.</div>
+      <div class="sub">تعديل البيانات الأساسية وإدارة الملفات الحالية.</div>
 
       <div id="status" class="status"></div>
       <div id="loading" class="loading">جاري تحميل البيانات...</div>
@@ -213,54 +239,50 @@
             <input id="title" name="title" type="text" required />
           </div>
 
-          <div>
-            <label for="lecture_date">تاريخ المحاضرة</label>
-            <input id="lecture_date" name="lecture_date" type="text" placeholder="مثال: 2026-04-07" />
+          <div class="grid-2">
+            <div>
+              <label for="speaker">المتحدث</label>
+              <input id="speaker" name="speaker" type="text" />
+            </div>
+
+            <div>
+              <label for="lecture_date">تاريخ المحاضرة</label>
+              <input id="lecture_date" name="lecture_date" type="date" required />
+            </div>
           </div>
 
           <div>
             <label for="description">الوصف</label>
-            <textarea id="description" name="description" placeholder="اكتب وصف المحاضرة هنا"></textarea>
+            <textarea id="description" name="description"></textarea>
+          </div>
+
+          <div class="grid-2">
+            <div>
+              <label for="cover_image_url">رابط صورة الغلاف</label>
+              <input id="cover_image_url" name="cover_image_url" type="text" />
+            </div>
+
+            <div>
+              <label for="is_published">الحالة</label>
+              <select id="is_published" name="is_published">
+                <option value="1">منشور</option>
+                <option value="0">غير منشور</option>
+              </select>
+            </div>
           </div>
 
           <div class="box">
-            <div class="box-title">الملف الحالي</div>
-            <div id="currentFileBox" class="small">لا يوجد ملف حالي.</div>
-
-            <label for="lecture_file" style="margin-top:14px;">استبدال الملف من الكمبيوتر</label>
-            <input
-              id="lecture_file"
-              name="lecture_file"
-              type="file"
-              accept=".pdf,.ppt,.pptx,.doc,.docx"
-            />
-
-            <label class="check">
-              <input id="remove_file" name="remove_file" type="checkbox" />
-              إزالة ربط الملف الحالي من هذه المحاضرة
-            </label>
+            <div class="box-title">معاينة الغلاف</div>
+            <div id="coverPreviewBox" class="empty">لا توجد صورة غلاف.</div>
           </div>
 
           <div class="box">
-            <div class="box-title">صورة الغلاف الحالية</div>
-            <div id="currentCoverBox" class="small">لا توجد صورة غلاف حالية.</div>
-
-            <label for="cover_file" style="margin-top:14px;">استبدال صورة الغلاف من الكمبيوتر</label>
-            <input
-              id="cover_file"
-              name="cover_file"
-              type="file"
-              accept="image/*"
-            />
-
-            <label class="check">
-              <input id="remove_cover" name="remove_cover" type="checkbox" />
-              إزالة ربط صورة الغلاف الحالية من هذه المحاضرة
-            </label>
+            <div class="box-title">الملفات الحالية</div>
+            <div id="filesBox" class="empty">لا توجد ملفات.</div>
           </div>
         </div>
 
-        <div class="actions">
+        <div class="actions" style="margin-top:18px;">
           <button id="saveBtn" class="btn-primary" type="submit">حفظ التعديلات</button>
           <a class="btn btn-light" href="/admin/">العودة إلى لوحة الإدارة</a>
         </div>
@@ -275,23 +297,17 @@
     const saveBtn = document.getElementById("saveBtn");
 
     const titleEl = document.getElementById("title");
+    const speakerEl = document.getElementById("speaker");
     const lectureDateEl = document.getElementById("lecture_date");
     const descriptionEl = document.getElementById("description");
+    const coverImageUrlEl = document.getElementById("cover_image_url");
+    const isPublishedEl = document.getElementById("is_published");
 
-    const lectureFileEl = document.getElementById("lecture_file");
-    const coverFileEl = document.getElementById("cover_file");
-
-    const removeFileEl = document.getElementById("remove_file");
-    const removeCoverEl = document.getElementById("remove_cover");
-
-    const currentFileBox = document.getElementById("currentFileBox");
-    const currentCoverBox = document.getElementById("currentCoverBox");
+    const coverPreviewBox = document.getElementById("coverPreviewBox");
+    const filesBox = document.getElementById("filesBox");
 
     const url = new URL(window.location.href);
     const lectureId = Number(url.searchParams.get("id"));
-
-    let currentFileUrl = "";
-    let currentCoverUrl = "";
 
     function showStatus(message, type = "ok") {
       statusBox.textContent = message;
@@ -312,28 +328,38 @@
         .replaceAll("'", "&#039;");
     }
 
-    function renderCurrentFile(url) {
+    function renderCover(url) {
       if (!url) {
-        currentFileBox.innerHTML = `<div class="small">لا يوجد ملف حالي.</div>`;
+        coverPreviewBox.innerHTML = `<div class="empty">لا توجد صورة غلاف.</div>`;
         return;
       }
 
-      currentFileBox.innerHTML = `
-        <a href="${escapeHtml(url)}" target="_blank" rel="noopener">فتح الملف الحالي</a>
+      coverPreviewBox.innerHTML = `
+        <img class="cover-preview" src="${escapeHtml(url)}" alt="Cover image" />
         <div class="small" style="margin-top:8px;">${escapeHtml(url)}</div>
       `;
     }
 
-    function renderCurrentCover(url) {
-      if (!url) {
-        currentCoverBox.innerHTML = `<div class="small">لا توجد صورة غلاف حالية.</div>`;
+    function renderFiles(files) {
+      if (!Array.isArray(files) || !files.length) {
+        filesBox.innerHTML = `<div class="empty">لا توجد ملفات مرتبطة بهذه المحاضرة.</div>`;
         return;
       }
 
-      currentCoverBox.innerHTML = `
-        <img class="preview-img" src="${escapeHtml(url)}" alt="Cover image" />
-        <div class="small" style="margin-top:8px;">${escapeHtml(url)}</div>
-      `;
+      filesBox.innerHTML = files.map((file) => `
+        <div class="file-row">
+          <div class="file-name">
+            <strong>${escapeHtml(file.file_name || "بدون اسم")}</strong>
+            ${file.file_type ? `(${escapeHtml(String(file.file_type).toUpperCase())})` : ""}
+            <div class="small">${escapeHtml(file.file_url || "")}</div>
+          </div>
+
+          <div class="file-actions">
+            <a class="btn btn-light" href="${escapeHtml(file.file_url || "#")}" target="_blank" rel="noopener">فتح</a>
+            <button class="btn btn-danger" type="button" onclick="deleteFile(${Number(file.id)})">حذف الملف</button>
+          </div>
+        </div>
+      `).join("");
     }
 
     async function loadLecture() {
@@ -354,20 +380,46 @@
         const item = data.item || {};
 
         titleEl.value = item.title || "";
+        speakerEl.value = item.speaker || "";
         lectureDateEl.value = item.lecture_date || "";
         descriptionEl.value = item.description || "";
+        coverImageUrlEl.value = item.cover_image_url || "";
+        isPublishedEl.value = String(item.is_published ?? 1);
 
-        currentFileUrl = item.file_url || "";
-        currentCoverUrl = item.cover_image || "";
-
-        renderCurrentFile(currentFileUrl);
-        renderCurrentCover(currentCoverUrl);
+        renderCover(item.cover_image_url || "");
+        renderFiles(item.files || []);
 
         loadingEl.style.display = "none";
         form.style.display = "block";
       } catch (err) {
         loadingEl.style.display = "none";
         showStatus(err.message || "حدث خطأ أثناء تحميل البيانات.", "err");
+      }
+    }
+
+    async function deleteFile(id) {
+      const ok = window.confirm("هل أنت متأكد من حذف هذا الملف؟");
+      if (!ok) return;
+
+      try {
+        const res = await fetch("/api/admin-delete-file", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ id })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر حذف الملف.");
+        }
+
+        showStatus("تم حذف الملف بنجاح.", "ok");
+        await loadLecture();
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء حذف الملف.", "err");
       }
     }
 
@@ -379,27 +431,22 @@
         saveBtn.disabled = true;
         saveBtn.textContent = "جاري الحفظ...";
 
-        const formData = new FormData();
-        formData.append("id", String(lectureId));
-        formData.append("title", titleEl.value);
-        formData.append("lecture_date", lectureDateEl.value);
-        formData.append("description", descriptionEl.value);
-        formData.append("existing_file_url", currentFileUrl);
-        formData.append("existing_cover_image", currentCoverUrl);
-        formData.append("remove_file", removeFileEl.checked ? "1" : "0");
-        formData.append("remove_cover", removeCoverEl.checked ? "1" : "0");
-
-        if (lectureFileEl.files && lectureFileEl.files[0]) {
-          formData.append("lecture_file", lectureFileEl.files[0]);
-        }
-
-        if (coverFileEl.files && coverFileEl.files[0]) {
-          formData.append("cover_file", coverFileEl.files[0]);
-        }
+        const payload = {
+          id: lectureId,
+          title: titleEl.value,
+          speaker: speakerEl.value,
+          lecture_date: lectureDateEl.value,
+          description: descriptionEl.value,
+          cover_image_url: coverImageUrlEl.value,
+          is_published: Number(isPublishedEl.value)
+        };
 
         const res = await fetch("/api/admin-update-lecture", {
           method: "POST",
-          body: formData
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
         });
 
         const data = await res.json().catch(() => ({}));
@@ -422,6 +469,8 @@
     }
 
     form.addEventListener("submit", saveLecture);
+    window.deleteFile = deleteFile;
+
     loadLecture();
   </script>
 </body>
