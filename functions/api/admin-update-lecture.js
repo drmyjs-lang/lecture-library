@@ -1,10 +1,9 @@
-function json(data, status = 200, headers = {}) {
+function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
-      ...headers,
     },
   });
 }
@@ -25,134 +24,37 @@ function isLoggedIn(request) {
   return getCookie(request, "__lecture_admin") === "1";
 }
 
+function slugify(text) {
+  return String(text || "")
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9\u0600-\u06FF]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
+}
+
+async function generateUniqueSlug(DB, title, excludeId) {
+  const base = slugify(title) || `lecture-${Date.now()}`;
+  let slug = base;
+  let counter = 2;
+
+  while (true) {
+    const exists = await DB.prepare(
+      "SELECT id FROM lectures WHERE slug = ? AND id != ? LIMIT 1"
+    )
+      .bind(slug, excludeId)
+      .first();
+
+    if (!exists) return slug;
+
+    slug = `${base}-${counter}`;
+    counter++;
+  }
+}
+
 function clean(value) {
   return String(value ?? "").trim();
-}
-
-function isValidUrl(value) {
-  if (!value) return true;
-  try {
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function getLectureColumns(env) {
-  const result = await env.DB.prepare("PRAGMA table_info(lectures)").all();
-  const rows = Array.isArray(result?.results) ? result.results : [];
-  return rows.map(row => row.name);
-}
-
-function pickColumn(columns, candidates) {
-  for (const name of candidates) {
-    if (columns.includes(name)) return name;
-  }
-  return null;
-}
-
-function pickValue(row, keys) {
-  for (const key of keys) {
-    const value = row?.[key];
-    if (value !== undefined && value !== null && String(value).trim() !== "") {
-      return value;
-    }
-  }
-  return "";
-}
-
-function normalizeLecture(row) {
-  return {
-    id: row?.id ?? "",
-    title: pickValue(row, ["title", "name"]),
-    description: pickValue(row, ["description", "desc", "details", "summary"]),
-    lecture_date: pickValue(row, ["lecture_date", "lectureDate", "date"]),
-    file_url: pickValue(row, [
-      "file_url",
-      "fileUrl",
-      "public_url",
-      "publicUrl",
-      "file_link",
-      "fileLink",
-      "file"
-    ]),
-    cover_image: pickValue(row, [
-      "cover_image",
-      "coverImage",
-      "thumbnail_url",
-      "thumbnailUrl",
-      "cover_url",
-      "coverUrl",
-      "image_url",
-      "imageUrl"
-    ])
-  };
-}
-
-function extFromFilename(name = "") {
-  const cleanName = String(name || "").trim();
-  const idx = cleanName.lastIndexOf(".");
-  if (idx === -1) return "";
-  return cleanName.slice(idx + 1).toLowerCase();
-}
-
-function extFromContentType(type = "") {
-  const map = {
-    "application/pdf": "pdf",
-    "application/vnd.ms-powerpoint": "ppt",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
-    "application/msword": "doc",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif"
-  };
-
-  return map[String(type || "").toLowerCase()] || "";
-}
-
-function buildObjectKey(folder, file) {
-  const now = new Date();
-  const year = String(now.getUTCFullYear());
-  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const stamp = Date.now();
-  const random = Math.random().toString(36).slice(2, 8);
-
-  const ext =
-    extFromFilename(file?.name) ||
-    extFromContentType(file?.type) ||
-    "bin";
-
-  return `${folder}/${year}/${month}/${stamp}-${random}.${ext}`;
-}
-
-function buildPublicUrl(baseUrl, key) {
-  const base = String(baseUrl || "").replace(/\/+$/, "");
-  const encodedKey = String(key)
-    .split("/")
-    .map(part => encodeURIComponent(part))
-    .join("/");
-
-  return `${base}/${encodedKey}`;
-}
-
-async function uploadToR2(bucket, baseUrl, folder, file) {
-  const key = buildObjectKey(folder, file);
-  const buffer = await file.arrayBuffer();
-
-  await bucket.put(key, buffer, {
-    httpMetadata: {
-      contentType: file.type || "application/octet-stream"
-    }
-  });
-
-  return buildPublicUrl(baseUrl, key);
-}
-
-function isRealFile(value) {
-  return value && typeof value === "object" && typeof value.arrayBuffer === "function" && Number(value.size || 0) > 0;
 }
 
 export async function onRequestPost(context) {
@@ -163,21 +65,15 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Unauthorized." }, 401);
     }
 
-    const form = await request.formData();
+    const body = await request.json().catch(() => ({}));
 
-    const id = Number(form.get("id"));
-    const title = clean(form.get("title"));
-    const description = clean(form.get("description"));
-    const lectureDate = clean(form.get("lecture_date"));
-
-    const existingFileUrlFromForm = clean(form.get("existing_file_url"));
-    const existingCoverImageFromForm = clean(form.get("existing_cover_image"));
-
-    const removeFile = clean(form.get("remove_file")) === "1";
-    const removeCover = clean(form.get("remove_cover")) === "1";
-
-    const lectureFile = form.get("lecture_file");
-    const coverFile = form.get("cover_file");
+    const id = Number(body.id);
+    const title = clean(body.title);
+    const description = clean(body.description);
+    const speaker = clean(body.speaker);
+    const lectureDate = clean(body.lecture_date);
+    const coverImageUrl = clean(body.cover_image_url);
+    const isPublished = body.is_published === false || body.is_published === 0 ? 0 : 1;
 
     if (!Number.isInteger(id) || id <= 0) {
       return json({ ok: false, error: "Invalid lecture id." }, 400);
@@ -187,109 +83,45 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Title is required." }, 400);
     }
 
-    const columns = await getLectureColumns(env);
-
-    const titleCol = pickColumn(columns, ["title", "name"]);
-    const descriptionCol = pickColumn(columns, ["description", "desc", "details", "summary"]);
-    const lectureDateCol = pickColumn(columns, ["lecture_date", "lectureDate", "date"]);
-    const fileUrlCol = pickColumn(columns, ["file_url", "fileUrl", "public_url", "publicUrl", "file_link", "fileLink", "file"]);
-    const coverImageCol = pickColumn(columns, ["cover_image", "coverImage", "thumbnail_url", "thumbnailUrl", "cover_url", "coverUrl", "image_url", "imageUrl"]);
-
-    if (!titleCol) {
-      return json({ ok: false, error: "Could not detect title column in lectures table." }, 500);
+    if (!lectureDate) {
+      return json({ ok: false, error: "Lecture date is required." }, 400);
     }
 
-    const row = await env.DB
-      .prepare("SELECT * FROM lectures WHERE id = ?")
+    const existing = await env.DB.prepare(
+      "SELECT id FROM lectures WHERE id = ? LIMIT 1"
+    )
       .bind(id)
       .first();
 
-    if (!row) {
+    if (!existing) {
       return json({ ok: false, error: "Lecture not found." }, 404);
     }
 
-    const existing = normalizeLecture(row);
+    const slug = await generateUniqueSlug(env.DB, title, id);
 
-    let finalFileUrl = existingFileUrlFromForm || clean(existing.file_url);
-    let finalCoverImage = existingCoverImageFromForm || clean(existing.cover_image);
-
-    if (removeFile) finalFileUrl = "";
-    if (removeCover) finalCoverImage = "";
-
-    const bucket = env.LECTURE_BUCKET || env.LECTURE_FILES;
-    const publicBaseUrl = clean(env.R2_PUBLIC_BASE_URL || env.PUBLIC_R2_BASE_URL);
-
-    if (isRealFile(lectureFile)) {
-      if (!bucket) {
-        return json({ ok: false, error: "R2 binding is missing. Expected LECTURE_BUCKET or LECTURE_FILES." }, 500);
-      }
-      if (!publicBaseUrl) {
-        return json({ ok: false, error: "R2 public base URL is missing." }, 500);
-      }
-
-      finalFileUrl = await uploadToR2(bucket, publicBaseUrl, "lectures/files", lectureFile);
-    }
-
-    if (isRealFile(coverFile)) {
-      if (!bucket) {
-        return json({ ok: false, error: "R2 binding is missing. Expected LECTURE_BUCKET or LECTURE_FILES." }, 500);
-      }
-      if (!publicBaseUrl) {
-        return json({ ok: false, error: "R2 public base URL is missing." }, 500);
-      }
-
-      if (!String(coverFile.type || "").startsWith("image/")) {
-        return json({ ok: false, error: "Cover image must be an image file." }, 400);
-      }
-
-      finalCoverImage = await uploadToR2(bucket, publicBaseUrl, "lectures/covers", coverFile);
-    }
-
-    if (finalFileUrl && !isValidUrl(finalFileUrl)) {
-      return json({ ok: false, error: "Invalid final file URL." }, 400);
-    }
-
-    if (finalCoverImage && !isValidUrl(finalCoverImage)) {
-      return json({ ok: false, error: "Invalid final cover image URL." }, 400);
-    }
-
-    const sets = [];
-    const values = [];
-
-    if (titleCol) {
-      sets.push(`${titleCol} = ?`);
-      values.push(title);
-    }
-
-    if (descriptionCol) {
-      sets.push(`${descriptionCol} = ?`);
-      values.push(description);
-    }
-
-    if (lectureDateCol) {
-      sets.push(`${lectureDateCol} = ?`);
-      values.push(lectureDate);
-    }
-
-    if (fileUrlCol) {
-      sets.push(`${fileUrlCol} = ?`);
-      values.push(finalFileUrl);
-    }
-
-    if (coverImageCol) {
-      sets.push(`${coverImageCol} = ?`);
-      values.push(finalCoverImage);
-    }
-
-    if (sets.length === 0) {
-      return json({ ok: false, error: "No updatable columns were detected." }, 500);
-    }
-
-    values.push(id);
-
-    const result = await env.DB
-      .prepare(`UPDATE lectures SET ${sets.join(", ")} WHERE id = ?`)
-      .bind(...values)
+    const result = await env.DB.prepare(`
+      UPDATE lectures
+      SET
+        title = ?,
+        description = ?,
+        speaker = ?,
+        lecture_date = ?,
+        slug = ?,
+        cover_image_url = ?,
+        is_published = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `)
+      .bind(
+        title,
+        description,
+        speaker,
+        lectureDate,
+        slug,
+        coverImageUrl,
+        isPublished,
+        id
+      )
       .run();
 
     if (!result.success) {
@@ -299,22 +131,13 @@ export async function onRequestPost(context) {
     return json({
       ok: true,
       message: "Lecture updated successfully.",
-      updatedId: id,
-      item: {
-        id,
-        title,
-        description,
-        lecture_date: lectureDate,
-        file_url: finalFileUrl,
-        cover_image: finalCoverImage
-      }
+      id,
     });
-  } catch (err) {
+  } catch (error) {
     return json(
       {
         ok: false,
-        error: "Update failed.",
-        details: err?.message || "Unknown error"
+        error: error.message || "Failed to update lecture",
       },
       500
     );
