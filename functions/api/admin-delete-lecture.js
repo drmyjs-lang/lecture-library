@@ -32,48 +32,64 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "Unauthorized." }, 401);
     }
 
+    if (!env.DB) {
+      return json({ ok: false, error: "DB binding is missing." }, 500);
+    }
+
     const body = await request.json().catch(() => ({}));
     const id = Number(body.id);
 
     if (!Number.isInteger(id) || id <= 0) {
-      return json({ ok: false, error: "Invalid file id." }, 400);
+      return json({ ok: false, error: "Invalid lecture id." }, 400);
     }
 
-    const existing = await env.DB.prepare(`
-      SELECT id, lecture_id, file_name
-      FROM lecture_files
+    const lecture = await env.DB.prepare(`
+      SELECT id, title
+      FROM lectures
       WHERE id = ?
       LIMIT 1
     `)
       .bind(id)
       .first();
 
-    if (!existing) {
-      return json({ ok: false, error: "File not found." }, 404);
+    if (!lecture) {
+      return json({ ok: false, error: "Lecture not found." }, 404);
     }
 
-    const result = await env.DB.prepare(`
-      DELETE FROM lecture_files
-      WHERE id = ?
+    const filesCountRow = await env.DB.prepare(`
+      SELECT COUNT(*) AS count
+      FROM lecture_files
+      WHERE lecture_id = ?
     `)
       .bind(id)
-      .run();
+      .first();
 
-    if (!result.success) {
-      return json({ ok: false, error: "Failed to delete file." }, 500);
-    }
+    const filesCount = Number(filesCountRow?.count || 0);
+
+    await env.DB.batch([
+      env.DB.prepare(`
+        DELETE FROM lecture_files
+        WHERE lecture_id = ?
+      `).bind(id),
+
+      env.DB.prepare(`
+        DELETE FROM lectures
+        WHERE id = ?
+      `).bind(id),
+    ]);
 
     return json({
       ok: true,
-      message: "File deleted successfully.",
-      deletedId: id,
-      lectureId: existing.lecture_id,
+      message: "Lecture deleted successfully.",
+      deletedLectureId: id,
+      deletedLectureTitle: lecture.title || "",
+      deletedFilesCount: filesCount,
     });
   } catch (error) {
     return json(
       {
         ok: false,
-        error: error.message || "Failed to delete file",
+        error: error.message || "Failed to delete lecture",
       },
       500
     );
