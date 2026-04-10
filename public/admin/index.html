@@ -1,1 +1,575 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة إدارة مكتبة المحاضرات</title>
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --card:#ffffff;
+      --text:#14213d;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --blue:#2563eb;
+      --blue2:#1d4ed8;
+      --red:#dc2626;
+      --green:#16a34a;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+      --radius:18px;
+    }
 
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:Tahoma, Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{
+      max-width:1150px;
+      margin:40px auto;
+      padding:0 16px;
+    }
+
+    .topbar,
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+
+    .topbar{
+      padding:18px 20px;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:20px;
+    }
+
+    .title h1{
+      margin:0;
+      font-size:30px;
+    }
+
+    .title p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:15px;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .card{
+      padding:20px;
+    }
+
+    .toolbar{
+      display:grid;
+      grid-template-columns:1fr auto auto;
+      gap:12px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+
+    .search{
+      width:100%;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:14px;
+      padding:13px 15px;
+      font-size:15px;
+      outline:none;
+      font-family:inherit;
+    }
+
+    .search:focus{
+      border-color:var(--blue);
+    }
+
+    .badge{
+      background:#eef2ff;
+      color:var(--blue);
+      border:1px solid #c7d2fe;
+      border-radius:999px;
+      padding:10px 14px;
+      font-size:14px;
+      white-space:nowrap;
+    }
+
+    .status{
+      display:none;
+      margin-bottom:16px;
+      padding:14px 16px;
+      border-radius:14px;
+      font-size:15px;
+    }
+
+    .status.show{display:block}
+    .status.ok{
+      background:#dcfce7;
+      color:#166534;
+      border:1px solid #bbf7d0;
+    }
+    .status.err{
+      background:#fee2e2;
+      color:#991b1b;
+      border:1px solid #fecaca;
+    }
+
+    .list{
+      display:grid;
+      gap:14px;
+    }
+
+    .lecture{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      display:grid;
+      grid-template-columns:160px 1fr;
+      gap:16px;
+      background:#fff;
+    }
+
+    .thumb{
+      width:160px;
+      height:160px;
+      border-radius:14px;
+      border:1px solid var(--line);
+      background:#f8fafc center/cover no-repeat;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#9ca3af;
+      text-align:center;
+      padding:8px;
+      overflow:hidden;
+    }
+
+    .lecture h3{
+      margin:0 0 10px;
+      font-size:24px;
+    }
+
+    .meta{
+      display:grid;
+      gap:6px;
+      color:var(--muted);
+      margin-bottom:12px;
+      font-size:14px;
+    }
+
+    .desc{
+      white-space:pre-wrap;
+      line-height:1.9;
+      margin-bottom:14px;
+      font-size:15px;
+    }
+
+    .files{
+      border:1px dashed var(--line);
+      border-radius:14px;
+      padding:12px;
+      margin-bottom:14px;
+      background:#fafafa;
+    }
+
+    .file-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 0;
+      border-bottom:1px solid #eee;
+      flex-wrap:wrap;
+    }
+
+    .file-row:last-child{
+      border-bottom:none;
+    }
+
+    .file-name{
+      font-size:14px;
+      word-break:break-word;
+    }
+
+    .lecture-actions,
+    .file-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    button,
+    a.btn{
+      border:none;
+      border-radius:14px;
+      padding:10px 16px;
+      font-size:14px;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      font-family:inherit;
+    }
+
+    .btn-light{
+      background:#eef2ff;
+      color:var(--blue);
+    }
+
+    .btn-danger{
+      background:#fee2e2;
+      color:var(--red);
+    }
+
+    .btn-success{
+      background:#dcfce7;
+      color:var(--green);
+    }
+
+    .loading,
+    .empty{
+      color:var(--muted);
+      text-align:center;
+      padding:24px;
+      border:1px dashed var(--line);
+      border-radius:14px;
+      background:#fafafa;
+    }
+
+    @media (max-width:900px){
+      .toolbar{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media (max-width:700px){
+      .lecture{
+        grid-template-columns:1fr;
+      }
+
+      .thumb{
+        width:100%;
+        height:200px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1>لوحة إدارة مكتبة المحاضرات</h1>
+        <p>عرض وإدارة المحاضرات مع الملفات المرتبطة بكل محاضرة.</p>
+      </div>
+
+      <div class="actions">
+        <a class="btn btn-light" href="/admin/lecture-upload/">رفع محاضرة جديدة</a>
+        <a class="btn btn-light" href="/lecture-library/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
+        <button id="logoutBtn" class="btn-danger" type="button">تسجيل الخروج</button>
+      </div>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="card">
+      <div class="toolbar">
+        <input id="searchInput" class="search" type="text" placeholder="ابحث بالعنوان أو الوصف أو المتحدث أو اسم الملف..." />
+        <div id="countBadge" class="badge">إجمالي المحاضرات: 0</div>
+        <div id="filteredBadge" class="badge">المعروض: 0</div>
+      </div>
+
+      <div id="loading" class="loading">جاري تحميل المحاضرات...</div>
+      <div id="empty" class="empty" style="display:none;">لا توجد محاضرات حاليًا.</div>
+      <div id="list" class="list"></div>
+    </div>
+  </div>
+
+  <script>
+    const statusBox = document.getElementById("status");
+    const listEl = document.getElementById("list");
+    const loadingEl = document.getElementById("loading");
+    const emptyEl = document.getElementById("empty");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const searchInput = document.getElementById("searchInput");
+    const countBadge = document.getElementById("countBadge");
+    const filteredBadge = document.getElementById("filteredBadge");
+
+    let allLectures = [];
+
+    function showStatus(message, type = "ok") {
+      statusBox.textContent = message;
+      statusBox.className = `status show ${type}`;
+    }
+
+    function hideStatus() {
+      statusBox.textContent = "";
+      statusBox.className = "status";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+      try {
+        return new Date(value).toLocaleString("ar-SA");
+      } catch {
+        return value;
+      }
+    }
+
+    function pick(...values) {
+      for (const value of values) {
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          return value;
+        }
+      }
+      return "";
+    }
+
+    function normalizeFile(file) {
+      return {
+        id: pick(file?.id),
+        file_name: pick(file?.file_name, file?.name),
+        file_type: pick(file?.file_type, file?.type).toLowerCase(),
+        file_url: pick(file?.file_url, file?.url),
+        thumbnail_url: pick(file?.thumbnail_url, file?.thumbnail),
+        file_size: pick(file?.file_size, file?.size)
+      };
+    }
+
+    function normalizeLecture(item) {
+      const files = Array.isArray(item?.files) ? item.files.map(normalizeFile).filter(f => f.file_url) : [];
+
+      return {
+        id: pick(item?.id),
+        title: pick(item?.title),
+        description: pick(item?.description),
+        speaker: pick(item?.speaker),
+        lecture_date: pick(item?.lecture_date),
+        created_at: pick(item?.created_at),
+        cover_image_url: pick(item?.cover_image_url, files[0]?.thumbnail_url),
+        files
+      };
+    }
+
+    function updateCounts(filteredItems) {
+      countBadge.textContent = `إجمالي المحاضرات: ${allLectures.length}`;
+      filteredBadge.textContent = `المعروض: ${filteredItems.length}`;
+    }
+
+    function sortLectures(items) {
+      return [...items].sort((a, b) => {
+        const aDate = new Date(a.created_at || a.lecture_date || 0).getTime();
+        const bDate = new Date(b.created_at || b.lecture_date || 0).getTime();
+        return bDate - aDate;
+      });
+    }
+
+    function matchesSearch(lecture, q) {
+      const haystack = [
+        lecture.title,
+        lecture.description,
+        lecture.speaker,
+        lecture.lecture_date,
+        ...lecture.files.map(f => `${f.file_name} ${f.file_type} ${f.file_url}`)
+      ].join(" ").toLowerCase();
+
+      return haystack.includes(q);
+    }
+
+    function getFilteredLectures() {
+      const q = searchInput.value.trim().toLowerCase();
+      const normalized = allLectures.map(normalizeLecture);
+
+      if (!q) return sortLectures(normalized);
+      return sortLectures(normalized.filter(item => matchesSearch(item, q)));
+    }
+
+    function renderFiles(files) {
+      if (!files.length) {
+        return `
+          <div class="files">
+            <div class="file-name">لا يوجد ملف مرتبط بهذه المحاضرة.</div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="files">
+          ${files.map((file, index) => `
+            <div class="file-row">
+              <div class="file-name">
+                <strong>ملف ${files.length > 1 ? index + 1 : ""}:</strong>
+                ${escapeHtml(file.file_name || file.file_url)}
+                ${file.file_type ? `(${escapeHtml(file.file_type.toUpperCase())})` : ""}
+              </div>
+              <div class="file-actions">
+                <a class="btn btn-success" href="${escapeHtml(file.file_url)}" target="_blank" rel="noopener">فتح الملف</a>
+                <button class="btn btn-light" type="button" onclick='copyText(${JSON.stringify(file.file_url)})'>نسخ الرابط</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderLectures(items) {
+      loadingEl.style.display = "none";
+      listEl.innerHTML = "";
+      updateCounts(items);
+
+      if (!items.length) {
+        emptyEl.style.display = "block";
+        return;
+      }
+
+      emptyEl.style.display = "none";
+
+      items.forEach((lecture) => {
+        const card = document.createElement("article");
+        card.className = "lecture";
+
+        const cover = lecture.cover_image_url || "";
+        const thumbStyle = cover ? `background-image:url('${String(cover).replaceAll("'", "%27")}')` : "";
+
+        card.innerHTML = `
+          <div class="thumb" style="${thumbStyle}">
+            ${cover ? "" : "بدون صورة"}
+          </div>
+
+          <div>
+            <h3>${escapeHtml(lecture.title || "بدون عنوان")}</h3>
+
+            <div class="meta">
+              <div><strong>التاريخ:</strong> ${escapeHtml(lecture.lecture_date || "—")}</div>
+              <div><strong>المتحدث:</strong> ${escapeHtml(lecture.speaker || "—")}</div>
+              <div><strong>أضيفت في:</strong> ${escapeHtml(formatDate(lecture.created_at))}</div>
+              <div><strong>المعرف:</strong> ${escapeHtml(lecture.id || "—")}</div>
+              <div><strong>عدد الملفات:</strong> ${lecture.files.length}</div>
+            </div>
+
+            <div class="desc">${escapeHtml(lecture.description || "لا يوجد وصف.")}</div>
+
+            ${renderFiles(lecture.files)}
+
+            <div class="lecture-actions">
+              <button class="btn-light" type="button" onclick="window.location.href='/admin/edit-lecture/?id=${Number(lecture.id)}'">تعديل</button>
+              <button class="btn-danger" type="button" onclick="deleteLecture(${Number(lecture.id)})">حذف</button>
+            </div>
+          </div>
+        `;
+
+        listEl.appendChild(card);
+      });
+    }
+
+    async function loadLectures() {
+      try {
+        hideStatus();
+        loadingEl.style.display = "block";
+        emptyEl.style.display = "none";
+        listEl.innerHTML = "";
+
+        const res = await fetch("/api/lectures?published=all");
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر تحميل المحاضرات.");
+        }
+
+        allLectures = Array.isArray(data.items) ? data.items : [];
+        renderLectures(getFilteredLectures());
+      } catch (err) {
+        loadingEl.style.display = "none";
+        updateCounts([]);
+        showStatus(err.message || "حدث خطأ أثناء تحميل المحاضرات.", "err");
+      }
+    }
+
+    async function deleteLecture(id) {
+      const ok = window.confirm("هل أنت متأكد من حذف هذه المحاضرة؟");
+      if (!ok) return;
+
+      try {
+        const res = await fetch("/api/admin-delete-lecture", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر حذف المحاضرة.");
+        }
+
+        allLectures = allLectures.filter(item => Number(item.id) !== Number(id));
+        renderLectures(getFilteredLectures());
+        showStatus("تم حذف المحاضرة بنجاح.", "ok");
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء حذف المحاضرة.", "err");
+      }
+    }
+
+    async function logout() {
+      try {
+        logoutBtn.disabled = true;
+
+        const res = await fetch("/api/admin-logout", { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر تسجيل الخروج.");
+        }
+
+        window.location.href = "/admin/login/";
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء تسجيل الخروج.", "err");
+      } finally {
+        logoutBtn.disabled = false;
+      }
+    }
+
+    async function copyText(value) {
+      try {
+        await navigator.clipboard.writeText(String(value || ""));
+        showStatus("تم نسخ الرابط.", "ok");
+      } catch {
+        showStatus("تعذر نسخ الرابط.", "err");
+      }
+    }
+
+    searchInput.addEventListener("input", () => {
+      renderLectures(getFilteredLectures());
+    });
+
+    logoutBtn.addEventListener("click", logout);
+
+    window.deleteLecture = deleteLecture;
+    window.copyText = copyText;
+
+    loadLectures();
+  </script>
+</body>
+</html>
