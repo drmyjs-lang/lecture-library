@@ -24,15 +24,19 @@ function isLoggedIn(request) {
   return getCookie(request, "__lecture_admin") === "1";
 }
 
+function clean(value) {
+  return String(value ?? "").trim();
+}
+
 function getExt(value = "") {
-  const clean = String(value || "").trim().toLowerCase().split("?")[0].split("#")[0];
-  const lastDot = clean.lastIndexOf(".");
+  const cleanValue = clean(value).toLowerCase().split("?")[0].split("#")[0];
+  const lastDot = cleanValue.lastIndexOf(".");
   if (lastDot === -1) return "";
-  return clean.slice(lastDot + 1);
+  return cleanValue.slice(lastDot + 1);
 }
 
 function normalizeType(type = "") {
-  const t = String(type || "").trim().toLowerCase();
+  const t = clean(type).toLowerCase();
 
   if (!t) return "";
   if (["other", "file", "unknown", "bin"].includes(t)) return "";
@@ -48,7 +52,7 @@ function normalizeType(type = "") {
 }
 
 function inferTypeFromExt(ext = "") {
-  const e = String(ext || "").trim().toLowerCase();
+  const e = clean(ext).toLowerCase();
 
   const map = {
     pdf: "pdf",
@@ -86,18 +90,47 @@ function inferFileType(rawType, fileName, fileUrl) {
   return "file";
 }
 
+function makePlaceholderCoverDataUrl(label = "Lecture Library") {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+      <rect width="1200" height="675" fill="#eef2ff"/>
+      <rect x="50" y="50" width="1100" height="575" rx="28" fill="#ffffff" stroke="#dbeafe" stroke-width="3"/>
+      <circle cx="160" cy="140" r="28" fill="#2563eb" opacity="0.18"/>
+      <circle cx="1080" cy="540" r="42" fill="#2563eb" opacity="0.12"/>
+      <text x="90" y="250" font-size="34" font-family="Arial, Tahoma, sans-serif" fill="#2563eb">Lecture Library</text>
+      <text x="90" y="340" font-size="62" font-weight="700" font-family="Arial, Tahoma, sans-serif" fill="#14213d">${String(label || "Lecture").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</text>
+      <text x="90" y="410" font-size="26" font-family="Arial, Tahoma, sans-serif" fill="#6b7280">No custom cover available</text>
+    </svg>
+  `.trim();
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 function normalizeStoredFile(file) {
   return {
     id: file?.id ?? null,
     lecture_id: file?.lecture_id ?? null,
-    file_name: String(file?.file_name || "").trim(),
+    file_name: clean(file?.file_name),
     file_type: inferFileType(file?.file_type, file?.file_name, file?.file_url),
     file_size: Number(file?.file_size || 0),
-    file_url: String(file?.file_url || "").trim(),
-    thumbnail_url: String(file?.thumbnail_url || "").trim(),
+    file_url: clean(file?.file_url),
+    thumbnail_url: clean(file?.thumbnail_url),
     sort_order: Number(file?.sort_order || 0),
     created_at: file?.created_at || null,
   };
+}
+
+function resolveLectureCover(storedCoverUrl, files, lectureTitle) {
+  const directCover = clean(storedCoverUrl);
+  if (directCover) return directCover;
+
+  const list = Array.isArray(files) ? files : [];
+  for (const file of list) {
+    const thumb = clean(file?.thumbnail_url);
+    if (thumb) return thumb;
+  }
+
+  return makePlaceholderCoverDataUrl(lectureTitle || "Lecture");
 }
 
 export async function onRequestGet(context) {
@@ -156,11 +189,17 @@ export async function onRequestGet(context) {
       .bind(id)
       .all();
 
+    const files = (filesResult.results || []).map(normalizeStoredFile);
+    const storedCover = clean(lecture.cover_image_url);
+    const effectiveCover = resolveLectureCover(storedCover, files, lecture.title);
+
     return json({
       ok: true,
       item: {
         ...lecture,
-        files: (filesResult.results || []).map(normalizeStoredFile),
+        stored_cover_image_url: storedCover,
+        effective_cover_image_url: effectiveCover,
+        files,
       },
     });
   } catch (error) {
