@@ -81,15 +81,6 @@
       transition:0.15s ease;
     }
 
-    .btn-primary{
-      background:var(--blue);
-      color:#fff;
-    }
-
-    .btn-primary:hover{
-      background:var(--blue2);
-    }
-
     .btn-light{
       background:#eef2ff;
       color:var(--blue);
@@ -132,13 +123,6 @@
       gap:14px;
       align-items:center;
       margin-bottom:18px;
-    }
-
-    .search-wrap{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
     }
 
     .search{
@@ -273,6 +257,7 @@
     .small{
       color:var(--muted);
       font-size:13px;
+      word-break:break-word;
     }
 
     @media (max-width:820px){
@@ -307,7 +292,7 @@
 
       <div class="actions">
         <a class="btn btn-light" href="/admin/lecture-upload/">رفع محاضرة جديدة</a>
-        <a class="btn btn-light" href="/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
+        <a class="btn btn-light" href="/lecture-library/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
         <button id="logoutBtn" class="btn-danger" type="button">تسجيل الخروج</button>
       </div>
     </div>
@@ -316,14 +301,12 @@
 
     <div class="card">
       <div class="toolbar">
-        <div class="search-wrap">
-          <input
-            id="searchInput"
-            class="search"
-            type="text"
-            placeholder="ابحث بالعنوان أو الوصف أو التاريخ..."
-          />
-        </div>
+        <input
+          id="searchInput"
+          class="search"
+          type="text"
+          placeholder="ابحث بالعنوان أو الوصف أو التاريخ أو المتحدث..."
+        />
 
         <div class="count-box">
           <div id="countBadge" class="badge">إجمالي المحاضرات: 0</div>
@@ -386,32 +369,39 @@
       return "";
     }
 
+    function normalizeFiles(files) {
+      if (!Array.isArray(files)) return [];
+      return files.map(file => ({
+        id: pickFirstValue(file?.id),
+        file_name: pickFirstValue(file?.file_name, file?.name),
+        file_type: pickFirstValue(file?.file_type, file?.type),
+        file_size: pickFirstValue(file?.file_size, file?.size),
+        file_url: pickFirstValue(file?.file_url, file?.url),
+        thumbnail_url: pickFirstValue(file?.thumbnail_url, file?.thumbnail)
+      })).filter(file => file.file_url);
+    }
+
     function normalizeLecture(item) {
+      const files = normalizeFiles(item?.files);
+      const firstFile = files.length ? files[0] : null;
+
       return {
         id: pickFirstValue(item?.id, item?.ID),
         title: pickFirstValue(item?.title, item?.name),
         description: pickFirstValue(item?.description, item?.desc, item?.details, item?.summary),
+        speaker: pickFirstValue(item?.speaker),
         lecture_date: pickFirstValue(item?.lecture_date, item?.lectureDate, item?.date),
-        file_url: pickFirstValue(
-          item?.file_url,
-          item?.fileUrl,
-          item?.public_url,
-          item?.publicUrl,
-          item?.file_link,
-          item?.fileLink,
-          item?.file
-        ),
+        created_at: pickFirstValue(item?.created_at, item?.createdAt),
         cover_image: pickFirstValue(
           item?.cover_image,
           item?.coverImage,
-          item?.thumbnail_url,
-          item?.thumbnailUrl,
-          item?.cover_url,
-          item?.coverUrl,
-          item?.image_url,
-          item?.imageUrl
+          item?.cover_image_url,
+          firstFile?.thumbnail_url
         ),
-        created_at: pickFirstValue(item?.created_at, item?.createdAt)
+        files,
+        first_file_url: pickFirstValue(firstFile?.file_url),
+        first_file_name: pickFirstValue(firstFile?.file_name),
+        first_file_type: pickFirstValue(firstFile?.file_type)
       };
     }
 
@@ -419,8 +409,8 @@
       return [...items]
         .map(normalizeLecture)
         .sort((a, b) => {
-          const aDate = new Date(a?.created_at || a?.lecture_date || 0).getTime();
-          const bDate = new Date(b?.created_at || b?.lecture_date || 0).getTime();
+          const aDate = new Date(a.created_at || a.lecture_date || 0).getTime();
+          const bDate = new Date(b.created_at || b.lecture_date || 0).getTime();
           return bDate - aDate;
         });
     }
@@ -431,25 +421,46 @@
     }
 
     function buildSearchText(item) {
-      const normalized = normalizeLecture(item);
+      const x = normalizeLecture(item);
       return [
-        normalized.title || "",
-        normalized.description || "",
-        normalized.lecture_date || "",
-        normalized.file_url || ""
+        x.title || "",
+        x.description || "",
+        x.lecture_date || "",
+        x.speaker || "",
+        ...x.files.map(f => `${f.file_name} ${f.file_type} ${f.file_url}`)
       ].join(" ").toLowerCase();
     }
 
     function getFilteredLectures() {
       const q = searchInput.value.trim().toLowerCase();
-
-      if (!q) {
-        return sortLectures(allLectures);
-      }
+      if (!q) return sortLectures(allLectures);
 
       return sortLectures(
         allLectures.filter(item => buildSearchText(item).includes(q))
       );
+    }
+
+    function renderFilesBlock(files) {
+      if (!files.length) {
+        return `
+          <div class="lecture-actions">
+            <button class="btn-light" type="button" disabled>لا يوجد ملف</button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="lecture-actions">
+          ${files.map((file, index) => `
+            <a class="btn btn-success" href="${escapeHtml(file.file_url)}" target="_blank" rel="noopener">
+              فتح الملف ${files.length > 1 ? index + 1 : ""}
+            </a>
+            <button class="btn-light" type="button" onclick='copyText(${JSON.stringify(file.file_url)})'>
+              نسخ الرابط ${files.length > 1 ? index + 1 : ""}
+            </button>
+          `).join("")}
+        </div>
+      `;
     }
 
     function renderLectures(items) {
@@ -475,9 +486,6 @@
           ? `background-image:url('${String(cover).replaceAll("'", "%27")}')`
           : "";
 
-        const fileUrl = item.file_url || "";
-        const safeFileUrl = escapeHtml(fileUrl);
-
         article.innerHTML = `
           <div class="thumb" style="${thumbStyle}">
             ${cover ? "" : "بدون صورة"}
@@ -488,14 +496,17 @@
 
             <div class="meta">
               <div><strong>التاريخ:</strong> ${escapeHtml(item.lecture_date || "—")}</div>
+              <div><strong>المتحدث:</strong> ${escapeHtml(item.speaker || "—")}</div>
               <div><strong>أضيفت في:</strong> ${escapeHtml(formatDate(item.created_at))}</div>
               <div><strong>المعرف:</strong> ${escapeHtml(item.id || "—")}</div>
-              <div class="small"><strong>رابط الملف:</strong> ${fileUrl ? safeFileUrl : "—"}</div>
+              <div><strong>عدد الملفات:</strong> ${item.files.length}</div>
+              <div class="small"><strong>أول ملف:</strong> ${escapeHtml(item.first_file_name || "—")}</div>
+              <div class="small"><strong>رابط أول ملف:</strong> ${escapeHtml(item.first_file_url || "—")}</div>
             </div>
 
             <div class="desc">${escapeHtml(item.description || "لا يوجد وصف.")}</div>
 
-            <div class="lecture-actions">
+            <div class="lecture-actions" style="margin-bottom:10px;">
               <button
                 class="btn-light"
                 type="button"
@@ -509,24 +520,9 @@
                 onclick="deleteLecture(${Number(item.id)})">
                 حذف
               </button>
-
-              ${
-                fileUrl
-                  ? `
-                    <a class="btn btn-success" href="${safeFileUrl}" target="_blank" rel="noopener">
-                      فتح الملف
-                    </a>
-                    <button class="btn-light" type="button" onclick='copyText(${JSON.stringify(fileUrl)})'>
-                      نسخ الرابط
-                    </button>
-                  `
-                  : `
-                    <button class="btn-light" type="button" disabled>
-                      لا يوجد ملف
-                    </button>
-                  `
-              }
             </div>
+
+            ${renderFilesBlock(item.files)}
           </div>
         `;
 
@@ -535,8 +531,7 @@
     }
 
     function applyFilter() {
-      const filtered = getFilteredLectures();
-      renderLectures(filtered);
+      renderLectures(getFilteredLectures());
     }
 
     async function loadLectures() {
@@ -546,7 +541,7 @@
         emptyEl.style.display = "none";
         listEl.innerHTML = "";
 
-        const res = await fetch("/api/lectures");
+        const res = await fetch("/api/lectures?published=all");
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
