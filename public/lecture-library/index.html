@@ -69,7 +69,7 @@
       border-radius:36px;
       padding:30px;
       display:grid;
-      grid-template-columns: 1.3fr 0.9fr;
+      grid-template-columns: 1.2fr 0.8fr;
       gap:28px;
       align-items:center;
       margin-bottom:26px;
@@ -102,42 +102,12 @@
       z-index:1;
     }
 
-    .eyebrow{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 14px;
-      border-radius:999px;
-      background:var(--blue-tint);
-      color:var(--blue);
-      font-size:13px;
-      font-weight:700;
-      letter-spacing:0.02em;
-      margin-bottom:16px;
-    }
-
-    .eyebrow-dot{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:var(--blue);
-      display:inline-block;
-    }
-
     .hero-title{
       margin:0;
       font-size:clamp(34px, 5vw, 58px);
       line-height:1.02;
       letter-spacing:-0.03em;
       font-weight:800;
-    }
-
-    .hero-sub{
-      margin:14px 0 0;
-      font-size:18px;
-      color:var(--muted);
-      line-height:1.8;
-      max-width:720px;
     }
 
     .hero-actions{
@@ -189,8 +159,12 @@
     .hero-brand-card{
       width:100%;
       max-width:430px;
-      background:rgba(255,255,255,0.68);
-      border:1px solid rgba(255,255,255,0.8);
+      min-height:240px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(255,255,255,0.72);
+      border:1px solid rgba(255,255,255,0.82);
       border-radius:30px;
       padding:22px;
       box-shadow:var(--shadow-soft);
@@ -204,15 +178,8 @@
       max-height:220px;
       object-fit:contain;
       border-radius:18px;
-      background:#fff;
-      padding:10px;
-    }
-
-    .hero-brand-text{
-      margin-top:14px;
-      color:var(--muted);
-      font-size:14px;
-      line-height:1.8;
+      background:transparent;
+      padding:0;
     }
 
     .toolbar{
@@ -342,7 +309,7 @@
 
     .cover{
       position:relative;
-      aspect-ratio: 16 / 9;
+      aspect-ratio:16 / 9;
       background:#f8fafc center/cover no-repeat;
       border-bottom:1px solid rgba(15, 23, 42, 0.06);
     }
@@ -357,7 +324,7 @@
     }
 
     .card-body{
-      padding:18px 18px 18px;
+      padding:18px;
       display:flex;
       flex-direction:column;
       gap:12px;
@@ -536,16 +503,7 @@
   <div class="shell">
     <section class="hero">
       <div class="hero-copy">
-        <div class="eyebrow">
-          <span class="eyebrow-dot"></span>
-          Alahsa Health Cluster · Lecture Library
-        </div>
-
         <h1 class="hero-title">Lecture Library</h1>
-
-        <p class="hero-sub">
-          A clean, premium lecture archive with a modern Apple-inspired look, using the Raqeem Assistant color identity for a calm and professional experience.
-        </p>
 
         <div class="hero-actions">
           <a class="btn btn-primary" href="#libraryGrid">Browse Lectures</a>
@@ -557,18 +515,10 @@
         <div class="hero-brand-card">
           <img
             class="hero-logo"
-            src="/assets/alahsa-health-cluster-logo.jpg"
+            src="/assets/alahsa-health-cluster-logo.jpg.jpg"
             alt="Alahsa Health Cluster Logo"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+            onerror="this.style.display='none';"
           />
-          <div class="hero-brand-text" style="display:none;">
-            Alahsa Health Cluster<br />
-            Add the uploaded logo to:<br />
-            <strong>public/assets/alahsa-health-cluster-logo.jpg</strong>
-          </div>
-          <div class="hero-brand-text">
-            Medical education archive with elegant presentation, fast browsing, and structured lecture access.
-          </div>
         </div>
       </div>
     </section>
@@ -601,7 +551,7 @@
     <div id="libraryGrid"></div>
 
     <div class="footer-note">
-      Powered by Lecture Library · Styled for Alahsa Health Cluster
+      Powered by Lecture Library
     </div>
   </div>
 
