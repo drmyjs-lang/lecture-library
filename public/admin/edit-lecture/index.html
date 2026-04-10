@@ -147,7 +147,7 @@
 
     .file-row{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:10px;
       padding:12px 0;
@@ -162,6 +162,7 @@
     .file-name{
       font-size:14px;
       word-break:break-word;
+      flex:1 1 420px;
     }
 
     .actions,
@@ -233,7 +234,7 @@
   <div class="wrap">
     <div class="card">
       <h1>تعديل المحاضرة</h1>
-      <div class="sub">تعديل البيانات الأساسية، رفع أو حذف الغلاف، حذف الملفات الحالية، وإضافة ملفات جديدة.</div>
+      <div class="sub">تعديل البيانات الأساسية، رفع أو حذف الغلاف، تعديل أسماء الملفات، حذف الملفات الحالية، وإضافة ملفات جديدة.</div>
 
       <div id="status" class="status"></div>
       <div id="loading" class="loading">جاري تحميل البيانات...</div>
@@ -386,14 +387,33 @@
       filesBox.innerHTML = files.map((file) => `
         <div class="file-row">
           <div class="file-name">
-            <strong>${escapeHtml(file.file_name || "بدون اسم")}</strong>
-            ${file.file_type ? `(${escapeHtml(String(file.file_type).toUpperCase())})` : ""}
+            <label style="margin-bottom:6px; display:block;">اسم الملف المعروض</label>
+            <input
+              id="file_name_${Number(file.id)}"
+              type="text"
+              value="${escapeHtml(file.file_name || "")}"
+              style="margin-bottom:8px;"
+            />
+
+            <div class="small">
+              ${file.file_type ? `النوع: ${escapeHtml(String(file.file_type).toUpperCase())}` : ""}
+            </div>
+
             <div class="small">${escapeHtml(file.file_url || "")}</div>
           </div>
 
           <div class="file-actions">
-            <a class="btn btn-light" href="${escapeHtml(file.file_url || "#")}" target="_blank" rel="noopener">فتح</a>
-            <button class="btn btn-danger" type="button" onclick="deleteFile(${Number(file.id)})">حذف الملف</button>
+            <button class="btn btn-success" type="button" onclick="renameFile(${Number(file.id)})">
+              حفظ الاسم
+            </button>
+
+            <a class="btn btn-light" href="${escapeHtml(file.file_url || "#")}" target="_blank" rel="noopener">
+              فتح
+            </a>
+
+            <button class="btn btn-danger" type="button" onclick="deleteFile(${Number(file.id)})">
+              حذف الملف
+            </button>
           </div>
         </div>
       `).join("");
@@ -457,6 +477,44 @@
         await loadLecture();
       } catch (err) {
         showStatus(err.message || "حدث خطأ أثناء حذف الملف.", "err");
+      }
+    }
+
+    async function renameFile(id) {
+      try {
+        hideStatus();
+
+        const input = document.getElementById(`file_name_${id}`);
+        if (!input) {
+          throw new Error("File name input not found.");
+        }
+
+        const fileName = input.value.trim();
+        if (!fileName) {
+          throw new Error("اكتب اسم الملف أولًا.");
+        }
+
+        const res = await fetch("/api/admin-rename-file", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            id,
+            file_name: fileName
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data?.error || "تعذر تعديل اسم الملف.");
+        }
+
+        showStatus("تم تعديل اسم الملف بنجاح.", "ok");
+        await loadLecture();
+      } catch (err) {
+        showStatus(err.message || "حدث خطأ أثناء تعديل اسم الملف.", "err");
       }
     }
 
@@ -603,6 +661,7 @@
     });
 
     window.deleteFile = deleteFile;
+    window.renameFile = renameFile;
 
     loadLecture();
   </script>
