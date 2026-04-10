@@ -1,624 +1,321 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>لوحة إدارة مكتبة المحاضرات</title>
-  <style>
-    :root{
-      --bg:#f3f6fb;
-      --card:#ffffff;
-      --text:#14213d;
-      --muted:#6b7280;
-      --line:#e5e7eb;
-      --blue:#2563eb;
-      --blue2:#1d4ed8;
-      --red:#dc2626;
-      --green:#16a34a;
-      --shadow:0 10px 30px rgba(0,0,0,.08);
-      --radius:18px;
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+function slugify(text) {
+  return String(text || "")
+    .toLowerCase()
+    .trim()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9\u0600-\u06FF]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
+}
+
+async function generateUniqueSlug(DB, title) {
+  const base = slugify(title) || `lecture-${Date.now()}`;
+  let slug = base;
+  let counter = 2;
+
+  while (true) {
+    const exists = await DB.prepare(
+      "SELECT id FROM lectures WHERE slug = ? LIMIT 1"
+    )
+      .bind(slug)
+      .first();
+
+    if (!exists) return slug;
+
+    slug = `${base}-${counter}`;
+    counter++;
+  }
+}
+
+function normalizeSort(sort) {
+  return sort === "oldest" ? "ASC" : "DESC";
+}
+
+function validateFiles(files) {
+  if (!Array.isArray(files)) return [];
+
+  return files
+    .filter((f) => f && typeof f === "object")
+    .map((f) => ({
+      file_name: String(f.file_name || "").trim(),
+      file_type: String(f.file_type || "").trim().toLowerCase(),
+      file_size: Number(f.file_size || 0),
+      file_url: String(f.file_url || "").trim(),
+      thumbnail_url: String(f.thumbnail_url || "").trim(),
+    }))
+    .filter((f) => f.file_name && f.file_url);
+}
+
+export async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+}
+
+export async function onRequestGet(context) {
+  try {
+    const { request, env } = context;
+    const url = new URL(request.url);
+
+    const q = (url.searchParams.get("q") || "").trim();
+    const sort = normalizeSort(url.searchParams.get("sort"));
+    const publishedOnly = url.searchParams.get("published") !== "all";
+
+    let lecturesQuery = `
+      SELECT
+        id,
+        title,
+        description,
+        speaker,
+        lecture_date,
+        slug,
+        cover_image_url,
+        is_published,
+        created_at,
+        updated_at
+      FROM lectures
+      WHERE 1 = 1
+    `;
+
+    const binds = [];
+
+    if (publishedOnly) {
+      lecturesQuery += ` AND is_published = 1 `;
     }
 
-    *{box-sizing:border-box}
-
-    body{
-      margin:0;
-      font-family:Tahoma, Arial, sans-serif;
-      background:var(--bg);
-      color:var(--text);
+    if (q) {
+      lecturesQuery += `
+        AND (
+          title LIKE ?
+          OR description LIKE ?
+          OR speaker LIKE ?
+        )
+      `;
+      const like = `%${q}%`;
+      binds.push(like, like, like);
     }
 
-    .wrap{
-      max-width:1150px;
-      margin:40px auto;
-      padding:0 16px;
+    lecturesQuery += `
+      ORDER BY lecture_date ${sort}, created_at ${sort}
+    `;
+
+    const lectures = await env.DB.prepare(lecturesQuery).bind(...binds).all();
+    const items = lectures.results || [];
+
+    if (!items.length) {
+      return json({
+        ok: true,
+        items: [],
+        count: 0,
+      });
     }
 
-    .topbar{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:18px 20px;
-      display:flex;
-      gap:12px;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
-      margin-bottom:20px;
-    }
+    const lectureIds = items.map((x) => x.id);
+    const placeholders = lectureIds.map(() => "?").join(",");
 
-    .title h1{
-      margin:0;
-      font-size:30px;
-    }
+    const filesResult = await env.DB.prepare(`
+      SELECT
+        id,
+        lecture_id,
+        file_name,
+        file_type,
+        file_size,
+        file_url,
+        thumbnail_url,
+        created_at
+      FROM lecture_files
+      WHERE lecture_id IN (${placeholders})
+      ORDER BY created_at DESC, id DESC
+    `)
+      .bind(...lectureIds)
+      .all();
 
-    .title p{
-      margin:8px 0 0;
-      color:var(--muted);
-      font-size:15px;
-    }
+    const files = filesResult.results || [];
+    const filesByLectureId = new Map();
 
-    .actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    button,
-    a.btn{
-      border:none;
-      border-radius:14px;
-      padding:12px 18px;
-      font-size:15px;
-      cursor:pointer;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      font-family:inherit;
-      transition:0.15s ease;
-    }
-
-    .btn-light{
-      background:#eef2ff;
-      color:var(--blue);
-    }
-
-    .btn-light:hover{
-      background:#e0e7ff;
-    }
-
-    .btn-danger{
-      background:#fee2e2;
-      color:var(--red);
-    }
-
-    .btn-danger:hover{
-      background:#fecaca;
-    }
-
-    .btn-success{
-      background:#dcfce7;
-      color:var(--green);
-    }
-
-    .btn-success:hover{
-      background:#bbf7d0;
-    }
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:20px;
-      margin-bottom:20px;
-    }
-
-    .toolbar{
-      display:grid;
-      grid-template-columns:1.5fr auto;
-      gap:14px;
-      align-items:center;
-      margin-bottom:18px;
-    }
-
-    .search{
-      width:100%;
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:14px;
-      padding:13px 15px;
-      font-size:15px;
-      outline:none;
-      font-family:inherit;
-    }
-
-    .search:focus{
-      border-color:var(--blue);
-    }
-
-    .count-box{
-      display:flex;
-      align-items:center;
-      justify-content:flex-end;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    .badge{
-      background:#eef2ff;
-      color:var(--blue);
-      border:1px solid #c7d2fe;
-      border-radius:999px;
-      padding:10px 14px;
-      font-size:14px;
-      white-space:nowrap;
-    }
-
-    .status{
-      display:none;
-      margin-bottom:16px;
-      padding:14px 16px;
-      border-radius:14px;
-      font-size:15px;
-    }
-
-    .status.show{display:block}
-
-    .status.ok{
-      background:#dcfce7;
-      color:#166534;
-      border:1px solid #bbf7d0;
-    }
-
-    .status.err{
-      background:#fee2e2;
-      color:#991b1b;
-      border:1px solid #fecaca;
-    }
-
-    .empty{
-      color:var(--muted);
-      text-align:center;
-      padding:30px 10px;
-      border:1px dashed var(--line);
-      border-radius:14px;
-      background:#fafafa;
-    }
-
-    .list{
-      display:grid;
-      gap:14px;
-    }
-
-    .lecture{
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:16px;
-      display:grid;
-      grid-template-columns:140px 1fr;
-      gap:16px;
-      align-items:start;
-      background:#fff;
-    }
-
-    .thumb{
-      width:140px;
-      height:140px;
-      border-radius:14px;
-      border:1px solid var(--line);
-      background:#f8fafc center/cover no-repeat;
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      color:#9ca3af;
-      font-size:13px;
-      text-align:center;
-      padding:8px;
-    }
-
-    .lecture h3{
-      margin:0 0 8px;
-      font-size:22px;
-      line-height:1.5;
-    }
-
-    .meta{
-      color:var(--muted);
-      font-size:14px;
-      display:grid;
-      gap:6px;
-      margin-bottom:12px;
-    }
-
-    .desc{
-      font-size:15px;
-      line-height:1.9;
-      margin-bottom:14px;
-      white-space:pre-wrap;
-    }
-
-    .lecture-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-
-    .loading{
-      text-align:center;
-      color:var(--muted);
-      padding:20px;
-    }
-
-    .small{
-      color:var(--muted);
-      font-size:13px;
-      word-break:break-word;
-    }
-
-    @media (max-width:820px){
-      .toolbar{
-        grid-template-columns:1fr;
+    for (const file of files) {
+      if (!filesByLectureId.has(file.lecture_id)) {
+        filesByLectureId.set(file.lecture_id, []);
       }
-
-      .count-box{
-        justify-content:flex-start;
-      }
+      filesByLectureId.get(file.lecture_id).push(file);
     }
 
-    @media (max-width:700px){
-      .lecture{
-        grid-template-columns:1fr;
-      }
+    const merged = items.map((lecture) => ({
+      ...lecture,
+      files: filesByLectureId.get(lecture.id) || [],
+    }));
 
-      .thumb{
-        width:100%;
-        height:190px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="title">
-        <h1>لوحة إدارة مكتبة المحاضرات</h1>
-        <p>عرض وإدارة المحاضرات مع البحث والتعديل والحذف.</p>
-      </div>
+    return json({
+      ok: true,
+      items: merged,
+      count: merged.length,
+    });
+  } catch (error) {
+    return json(
+      {
+        ok: false,
+        error: error.message || "Failed to load lectures",
+      },
+      500
+    );
+  }
+}
 
-      <div class="actions">
-        <a class="btn btn-light" href="/admin/lecture-upload/">رفع محاضرة جديدة</a>
-        <a class="btn btn-light" href="/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
-        <button id="logoutBtn" class="btn-danger" type="button">تسجيل الخروج</button>
-      </div>
-    </div>
+export async function onRequestPost(context) {
+  try {
+    const { request, env } = context;
 
-    <div id="status" class="status"></div>
-
-    <div class="card">
-      <div class="toolbar">
-        <input
-          id="searchInput"
-          class="search"
-          type="text"
-          placeholder="ابحث بالعنوان أو الوصف أو التاريخ أو المتحدث..."
-        />
-
-        <div class="count-box">
-          <div id="countBadge" class="badge">إجمالي المحاضرات: 0</div>
-          <div id="filteredBadge" class="badge">المعروض: 0</div>
-        </div>
-      </div>
-
-      <div id="loading" class="loading">جاري تحميل المحاضرات...</div>
-      <div id="empty" class="empty" style="display:none;">لا توجد محاضرات حاليًا.</div>
-      <div id="list" class="list"></div>
-    </div>
-  </div>
-
-  <script>
-    const statusBox = document.getElementById("status");
-    const listEl = document.getElementById("list");
-    const loadingEl = document.getElementById("loading");
-    const emptyEl = document.getElementById("empty");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const searchInput = document.getElementById("searchInput");
-    const countBadge = document.getElementById("countBadge");
-    const filteredBadge = document.getElementById("filteredBadge");
-
-    let allLectures = [];
-
-    function showStatus(message, type = "ok") {
-      statusBox.textContent = message;
-      statusBox.className = `status show ${type}`;
-    }
-
-    function hideStatus() {
-      statusBox.textContent = "";
-      statusBox.className = "status";
-    }
-
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function formatDate(value) {
-      if (!value) return "—";
-      try {
-        return new Date(value).toLocaleString("ar-SA");
-      } catch {
-        return value;
-      }
-    }
-
-    function pickFirstValue(...values) {
-      for (const value of values) {
-        if (value !== undefined && value !== null && String(value).trim() !== "") {
-          return value;
-        }
-      }
-      return "";
-    }
-
-    function normalizeLecture(item) {
-      const files = Array.isArray(item?.files) ? item.files : [];
-      const firstFile = files.length ? files[0] : null;
-
-      return {
-        id: pickFirstValue(item?.id, item?.ID),
-        title: pickFirstValue(item?.title, item?.name),
-        description: pickFirstValue(item?.description, item?.desc, item?.details, item?.summary),
-        speaker: pickFirstValue(item?.speaker),
-        lecture_date: pickFirstValue(item?.lecture_date, item?.lectureDate, item?.date),
-        created_at: pickFirstValue(item?.created_at, item?.createdAt),
-        cover_image: pickFirstValue(
-          item?.cover_image,
-          item?.coverImage,
-          item?.cover_image_url,
-          item?.thumbnail_url,
-          firstFile?.thumbnail_url
-        ),
-        file_url: pickFirstValue(
-          item?.file_url,
-          item?.fileUrl,
-          firstFile?.file_url
-        ),
-        file_name: pickFirstValue(
-          item?.file_name,
-          firstFile?.file_name
-        ),
-        file_type: pickFirstValue(
-          item?.file_type,
-          firstFile?.file_type
-        ),
-        files
-      };
-    }
-
-    function sortLectures(items) {
-      return [...items]
-        .map(normalizeLecture)
-        .sort((a, b) => {
-          const aDate = new Date(a.created_at || a.lecture_date || 0).getTime();
-          const bDate = new Date(b.created_at || b.lecture_date || 0).getTime();
-          return bDate - aDate;
-        });
-    }
-
-    function updateCounts(filteredItems) {
-      countBadge.textContent = `إجمالي المحاضرات: ${allLectures.length}`;
-      filteredBadge.textContent = `المعروض: ${filteredItems.length}`;
-    }
-
-    function buildSearchText(item) {
-      const x = normalizeLecture(item);
-      return [
-        x.title || "",
-        x.description || "",
-        x.lecture_date || "",
-        x.speaker || "",
-        x.file_name || "",
-        x.file_url || ""
-      ].join(" ").toLowerCase();
-    }
-
-    function getFilteredLectures() {
-      const q = searchInput.value.trim().toLowerCase();
-
-      if (!q) return sortLectures(allLectures);
-
-      return sortLectures(
-        allLectures.filter(item => buildSearchText(item).includes(q))
+    const contentType = request.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      return json(
+        {
+          ok: false,
+          error: "Content-Type must be application/json",
+        },
+        400
       );
     }
 
-    function renderLectures(items) {
-      loadingEl.style.display = "none";
-      listEl.innerHTML = "";
-      updateCounts(items);
+    const body = await request.json();
 
-      if (!Array.isArray(items) || items.length === 0) {
-        emptyEl.style.display = "block";
-        return;
-      }
+    const title = String(body.title || "").trim();
+    const description = String(body.description || "").trim();
+    const speaker = String(body.speaker || "").trim();
+    const lectureDate = String(body.lecture_date || "").trim();
+    const coverImageUrl = String(body.cover_image_url || "").trim();
+    const isPublished = body.is_published === false ? 0 : 1;
+    const files = validateFiles(body.files);
 
-      emptyEl.style.display = "none";
-
-      for (const rawItem of items) {
-        const item = normalizeLecture(rawItem);
-
-        const article = document.createElement("article");
-        article.className = "lecture";
-
-        const cover = item.cover_image || "";
-        const thumbStyle = cover
-          ? `background-image:url('${String(cover).replaceAll("'", "%27")}')`
-          : "";
-
-        const fileUrl = item.file_url || "";
-        const fileName = item.file_name || "";
-        const safeFileUrl = escapeHtml(fileUrl);
-        const safeFileName = escapeHtml(fileName || fileUrl);
-
-        article.innerHTML = `
-          <div class="thumb" style="${thumbStyle}">
-            ${cover ? "" : "بدون صورة"}
-          </div>
-
-          <div>
-            <h3>${escapeHtml(item.title || "بدون عنوان")}</h3>
-
-            <div class="meta">
-              <div><strong>التاريخ:</strong> ${escapeHtml(item.lecture_date || "—")}</div>
-              <div><strong>المتحدث:</strong> ${escapeHtml(item.speaker || "—")}</div>
-              <div><strong>أضيفت في:</strong> ${escapeHtml(formatDate(item.created_at))}</div>
-              <div><strong>المعرف:</strong> ${escapeHtml(item.id || "—")}</div>
-              <div class="small"><strong>اسم الملف:</strong> ${fileName ? safeFileName : "—"}</div>
-              <div class="small"><strong>رابط الملف:</strong> ${fileUrl ? safeFileUrl : "—"}</div>
-            </div>
-
-            <div class="desc">${escapeHtml(item.description || "لا يوجد وصف.")}</div>
-
-            <div class="lecture-actions">
-              <button
-                class="btn-light"
-                type="button"
-                onclick="window.location.href='/admin/edit-lecture/?id=${Number(item.id)}'">
-                تعديل
-              </button>
-
-              <button
-                class="btn-danger"
-                type="button"
-                onclick="deleteLecture(${Number(item.id)})">
-                حذف
-              </button>
-
-              ${
-                fileUrl
-                  ? `
-                    <a class="btn btn-success" href="${safeFileUrl}" target="_blank" rel="noopener">
-                      فتح الملف
-                    </a>
-                    <button class="btn-light" type="button" onclick='copyText(${JSON.stringify(fileUrl)})'>
-                      نسخ الرابط
-                    </button>
-                  `
-                  : `
-                    <button class="btn-light" type="button" disabled>
-                      لا يوجد ملف
-                    </button>
-                  `
-              }
-            </div>
-          </div>
-        `;
-
-        listEl.appendChild(article);
-      }
+    if (!title) {
+      return json({ ok: false, error: "Title is required" }, 400);
     }
 
-    function applyFilter() {
-      renderLectures(getFilteredLectures());
+    if (!lectureDate) {
+      return json({ ok: false, error: "Lecture date is required" }, 400);
     }
 
-    async function loadLectures() {
-      try {
-        hideStatus();
-        loadingEl.style.display = "block";
-        emptyEl.style.display = "none";
-        listEl.innerHTML = "";
+    const slug = await generateUniqueSlug(env.DB, title);
 
-        const res = await fetch("/api/lectures");
-        const data = await res.json().catch(() => ({}));
+    const insertLecture = await env.DB.prepare(`
+      INSERT INTO lectures (
+        title,
+        description,
+        speaker,
+        lecture_date,
+        slug,
+        cover_image_url,
+        is_published
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `)
+      .bind(
+        title,
+        description,
+        speaker,
+        lectureDate,
+        slug,
+        coverImageUrl,
+        isPublished
+      )
+      .run();
 
-        if (!res.ok) {
-          throw new Error(data?.error || "تعذر تحميل المحاضرات.");
-        }
+    const lectureId = insertLecture.meta?.last_row_id;
 
-        allLectures = Array.isArray(data.items) ? data.items : [];
-        applyFilter();
-      } catch (err) {
-        loadingEl.style.display = "none";
-        updateCounts([]);
-        showStatus(err.message || "حدث خطأ أثناء تحميل المحاضرات.", "err");
-      }
+    if (!lectureId) {
+      return json({ ok: false, error: "Failed to create lecture" }, 500);
     }
 
-    async function deleteLecture(id) {
-      const ok = window.confirm("هل أنت متأكد من حذف هذه المحاضرة؟");
-      if (!ok) return;
+    if (files.length) {
+      const statements = files.map((file) =>
+        env.DB.prepare(`
+          INSERT INTO lecture_files (
+            lecture_id,
+            file_name,
+            file_type,
+            file_size,
+            file_url,
+            thumbnail_url
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `).bind(
+          lectureId,
+          file.file_name,
+          file.file_type,
+          Number.isFinite(file.file_size) ? file.file_size : 0,
+          file.file_url,
+          file.thumbnail_url
+        )
+      );
 
-      try {
-        const res = await fetch("/api/admin-delete-lecture", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ id })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          throw new Error(data?.error || "تعذر حذف المحاضرة.");
-        }
-
-        allLectures = allLectures.filter(item => Number(normalizeLecture(item).id) !== Number(id));
-        applyFilter();
-        showStatus("تم حذف المحاضرة بنجاح.", "ok");
-      } catch (err) {
-        showStatus(err.message || "حدث خطأ أثناء حذف المحاضرة.", "err");
-      }
+      await env.DB.batch(statements);
     }
 
-    async function logout() {
-      try {
-        logoutBtn.disabled = true;
+    const lecture = await env.DB.prepare(`
+      SELECT
+        id,
+        title,
+        description,
+        speaker,
+        lecture_date,
+        slug,
+        cover_image_url,
+        is_published,
+        created_at,
+        updated_at
+      FROM lectures
+      WHERE id = ?
+      LIMIT 1
+    `)
+      .bind(lectureId)
+      .first();
 
-        const res = await fetch("/api/admin-logout", {
-          method: "POST"
-        });
+    const insertedFiles = await env.DB.prepare(`
+      SELECT
+        id,
+        lecture_id,
+        file_name,
+        file_type,
+        file_size,
+        file_url,
+        thumbnail_url,
+        created_at
+      FROM lecture_files
+      WHERE lecture_id = ?
+      ORDER BY created_at DESC, id DESC
+    `)
+      .bind(lectureId)
+      .all();
 
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          throw new Error(data?.error || "تعذر تسجيل الخروج.");
-        }
-
-        window.location.href = "/admin/login/";
-      } catch (err) {
-        showStatus(err.message || "حدث خطأ أثناء تسجيل الخروج.", "err");
-      } finally {
-        logoutBtn.disabled = false;
-      }
-    }
-
-    async function copyText(value) {
-      try {
-        await navigator.clipboard.writeText(String(value || ""));
-        showStatus("تم نسخ الرابط.", "ok");
-      } catch {
-        showStatus("تعذر نسخ الرابط.", "err");
-      }
-    }
-
-    searchInput.addEventListener("input", applyFilter);
-    logoutBtn.addEventListener("click", logout);
-
-    window.deleteLecture = deleteLecture;
-    window.copyText = copyText;
-
-    loadLectures();
-  </script>
-</body>
-</html>
+    return json(
+      {
+        ok: true,
+        item: {
+          ...lecture,
+          files: insertedFiles.results || [],
+        },
+      },
+      201
+    );
+  } catch (error) {
+    return json(
+      {
+        ok: false,
+        error: error.message || "Failed to create lecture",
+      },
+      500
+    );
+  }
+}
