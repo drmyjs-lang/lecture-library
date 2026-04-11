@@ -831,7 +831,7 @@
         formData.append("lecture_id", String(lectureId));
         formData.append("cover", file);
 
-        const res = await fetch("/api/admin-upload-cover", {
+        const res = await fetch("/api/upload-cover", {
           method: "POST",
           body: formData
         });
