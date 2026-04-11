@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lecture Library</title>
   <meta name="theme-color" content="#2563eb" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
     :root{
       --bg: #f5f7fb;
@@ -25,7 +30,7 @@
       --radius-md: 16px;
       --radius-sm: 12px;
       --max: 1280px;
-      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Tahoma, Arial, sans-serif;
+      --font-stack: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Arial, sans-serif;
     }
 
     *{
@@ -104,10 +109,11 @@
 
     .hero-title{
       margin:0;
-      font-size:clamp(34px, 5vw, 58px);
-      line-height:1.02;
-      letter-spacing:-0.03em;
-      font-weight:800;
+      font-size:clamp(24px, 3vw, 36px);
+      line-height:1.08;
+      letter-spacing:-0.02em;
+      font-weight:700;
+      font-family:"Manrope", sans-serif;
     }
 
     .hero-actions{
@@ -129,6 +135,7 @@
       justify-content:center;
       gap:8px;
       transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+      font-family:"Manrope", sans-serif;
     }
 
     .btn:hover{
@@ -223,6 +230,7 @@
       outline:none;
       color:var(--text);
       box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+      font-family:"Manrope", sans-serif;
     }
 
     .search:focus{
@@ -239,12 +247,12 @@
       padding:0 16px;
       font-size:15px;
       color:var(--text);
+      font-family:"Manrope", sans-serif;
     }
 
     .select{
       min-width:180px;
       outline:none;
-      font-family:inherit;
     }
 
     .stat{
@@ -274,12 +282,15 @@
       margin:0;
       font-size:34px;
       letter-spacing:-0.03em;
+      font-family:"Manrope", sans-serif;
+      font-weight:700;
     }
 
     .month-count{
       color:var(--muted);
       font-weight:600;
       font-size:14px;
+      font-family:"Manrope", sans-serif;
     }
 
     .grid{
@@ -339,6 +350,7 @@
       flex-wrap:wrap;
       color:var(--muted);
       font-size:14px;
+      font-family:"Manrope", sans-serif;
     }
 
     .speaker{
@@ -352,6 +364,7 @@
       letter-spacing:-0.03em;
       line-height:1.08;
       font-weight:800;
+      font-family:"Manrope", sans-serif;
     }
 
     .desc{
@@ -363,6 +376,7 @@
       -webkit-box-orient:vertical;
       overflow:hidden;
       min-height:108px;
+      font-family:"Manrope", sans-serif;
     }
 
     .files-head{
@@ -378,6 +392,7 @@
       font-size:14px;
       font-weight:800;
       color:var(--text);
+      font-family:"Manrope", sans-serif;
     }
 
     .badge{
@@ -394,6 +409,7 @@
       text-transform:uppercase;
       letter-spacing:0.03em;
       border:1px solid rgba(37,99,235,0.10);
+      font-family:"Manrope", sans-serif;
     }
 
     .files-list{
@@ -429,12 +445,14 @@
       line-height:1.5;
       color:var(--text);
       word-break:break-word;
+      font-family:"Manrope", sans-serif;
     }
 
     .file-sub{
       margin-top:4px;
       color:var(--muted);
       font-size:12px;
+      font-family:"Manrope", sans-serif;
     }
 
     .empty,
@@ -447,6 +465,7 @@
       text-align:center;
       color:var(--muted);
       font-size:16px;
+      font-family:"Manrope", sans-serif;
     }
 
     .footer-note{
@@ -454,6 +473,7 @@
       color:var(--muted);
       font-size:13px;
       padding-top:30px;
+      font-family:"Manrope", sans-serif;
     }
 
     @media (max-width: 1120px){
@@ -484,7 +504,7 @@
       }
 
       .hero-title{
-        font-size:40px;
+        font-size:32px;
       }
 
       .month-title{
