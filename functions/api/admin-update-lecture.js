@@ -28,62 +28,18 @@ function clean(value) {
   return String(value ?? "").trim();
 }
 
-function getExtFromName(name = "") {
-  const value = String(name || "").trim();
-  const idx = value.lastIndexOf(".");
-  if (idx === -1) return "";
-  return value.slice(idx + 1).toLowerCase();
+function slugify(text) {
+  return clean(text)
+    .toLowerCase()
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[^\u0600-\u06FFa-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "") || "lecture";
 }
 
-function getExtFromType(type = "") {
-  const value = String(type || "").toLowerCase();
-
-  if (value.includes("jpeg")) return "jpg";
-  if (value.includes("jpg")) return "jpg";
-  if (value.includes("png")) return "png";
-  if (value.includes("webp")) return "webp";
-  if (value.includes("gif")) return "gif";
-  if (value.includes("svg")) return "svg";
-
-  return "";
-}
-
-function buildObjectKey(lectureId, file) {
-  const now = new Date();
-  const year = String(now.getUTCFullYear());
-  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const stamp = Date.now();
-  const rand = Math.random().toString(36).slice(2, 8);
-
-  const ext =
-    getExtFromName(file?.name || "") ||
-    getExtFromType(file?.type || "") ||
-    "bin";
-
-  return `lecture-covers/${year}/${month}/${lectureId}-${stamp}-${rand}.${ext}`;
-}
-
-function buildPublicUrl(baseUrl, key) {
-  const base = String(baseUrl || "").replace(/\/+$/, "");
-  const encodedKey = String(key)
-    .split("/")
-    .map((part) => encodeURIComponent(part))
-    .join("/");
-
-  return `${base}/${encodedKey}`;
-}
-
-async function uploadCoverToR2(bucket, baseUrl, lectureId, file) {
-  const key = buildObjectKey(lectureId, file);
-  const buffer = await file.arrayBuffer();
-
-  await bucket.put(key, buffer, {
-    httpMetadata: {
-      contentType: file.type || "application/octet-stream",
-    },
-  });
-
-  return buildPublicUrl(baseUrl, key);
+function normalizePublished(value) {
+  return Number(value) === 1 ? 1 : 0;
 }
 
 export async function onRequestPost(context) {
@@ -98,81 +54,95 @@ export async function onRequestPost(context) {
       return json({ ok: false, error: "DB binding is missing." }, 500);
     }
 
-    if (!env.LECTURE_BUCKET) {
-      return json({ ok: false, error: "LECTURE_BUCKET binding is missing." }, 500);
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ ok: false, error: "Invalid JSON body." }, 400);
     }
 
-    if (!env.R2_PUBLIC_BASE_URL) {
-      return json({ ok: false, error: "R2_PUBLIC_BASE_URL is missing." }, 500);
-    }
+    const id = Number(body?.id);
+    const title = clean(body?.title);
+    const speaker = clean(body?.speaker);
+    const lectureDate = clean(body?.lecture_date);
+    const description = clean(body?.description);
+    const coverImageUrl = clean(body?.cover_image_url);
+    const isPublished = normalizePublished(body?.is_published);
+    const slug = slugify(title);
 
-    const form = await request.formData();
-    const lectureId = Number(form.get("lecture_id"));
-    const coverFile = form.get("cover");
-
-    if (!Number.isInteger(lectureId) || lectureId <= 0) {
+    if (!Number.isInteger(id) || id <= 0) {
       return json({ ok: false, error: "Invalid lecture id." }, 400);
     }
 
+    if (!title) {
+      return json({ ok: false, error: "Title is required." }, 400);
+    }
+
+    if (!lectureDate) {
+      return json({ ok: false, error: "Lecture date is required." }, 400);
+    }
+
     const lecture = await env.DB.prepare(`
-      SELECT id, cover_image_url
+      SELECT id
       FROM lectures
       WHERE id = ?
       LIMIT 1
     `)
-      .bind(lectureId)
+      .bind(id)
       .first();
 
     if (!lecture) {
       return json({ ok: false, error: "Lecture not found." }, 404);
     }
 
-    if (
-      !coverFile ||
-      typeof coverFile !== "object" ||
-      typeof coverFile.arrayBuffer !== "function" ||
-      Number(coverFile.size || 0) <= 0
-    ) {
-      return json({ ok: false, error: "No valid cover image selected." }, 400);
-    }
-
-    const contentType = clean(coverFile.type).toLowerCase();
-    if (!contentType.startsWith("image/")) {
-      return json({ ok: false, error: "Cover must be an image file." }, 400);
-    }
-
-    const coverUrl = await uploadCoverToR2(
-      env.LECTURE_BUCKET,
-      env.R2_PUBLIC_BASE_URL,
-      lectureId,
-      coverFile
-    );
-
     const result = await env.DB.prepare(`
       UPDATE lectures
       SET
+        title = ?,
+        speaker = ?,
+        lecture_date = ?,
+        description = ?,
+        slug = ?,
         cover_image_url = ?,
+        is_published = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `)
-      .bind(coverUrl, lectureId)
+      .bind(
+        title,
+        speaker,
+        lectureDate,
+        description,
+        slug,
+        coverImageUrl,
+        isPublished,
+        id
+      )
       .run();
 
     if (!result.success) {
-      return json({ ok: false, error: "Failed to update cover image." }, 500);
+      return json({ ok: false, error: "Failed to update lecture." }, 500);
     }
 
     return json({
       ok: true,
-      message: "Cover uploaded successfully.",
-      lecture_id: lectureId,
-      cover_image_url: coverUrl,
+      message: "Lecture updated successfully.",
+      item: {
+        id,
+        title,
+        speaker,
+        lecture_date: lectureDate,
+        description,
+        slug,
+        cover_image_url: coverImageUrl,
+        is_published: isPublished,
+      },
     });
   } catch (error) {
     return json(
       {
         ok: false,
-        error: error.message || "Failed to upload cover",
+        error: error.message || "Failed to update lecture.",
       },
       500
     );
