@@ -314,6 +314,13 @@
       line-height:1.9;
     }
 
+    .speaker-textarea{
+      min-height:110px;
+      resize:vertical;
+      line-height:1.8;
+      white-space:pre-wrap;
+    }
+
     .box{
       border:1px solid rgba(15, 23, 42, 0.06);
       border-radius:24px;
@@ -501,7 +508,12 @@
           <div class="grid-2">
             <div>
               <label for="speaker">المتحدث</label>
-              <input id="speaker" name="speaker" type="text" />
+              <textarea
+                id="speaker"
+                name="speaker"
+                class="speaker-textarea"
+                placeholder="Dr. Hussian Almahdi&#10;Dr. Ahmed Ali&#10;Dr. Sara Mohammed"
+              ></textarea>
             </div>
 
             <div>
@@ -823,7 +835,7 @@
         const payload = {
           id: lectureId,
           title: titleEl.value.trim(),
-          speaker: speakerEl.value.trim(),
+          speaker: speakerEl.value,
           lecture_date: lectureDateEl.value.trim(),
           description: descriptionEl.value.trim(),
           cover_image_url: coverImageUrlEl.value.trim(),
