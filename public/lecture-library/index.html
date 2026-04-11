@@ -10,6 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
   <style>
     :root{
       --bg: #f5f7fb;
@@ -583,6 +585,8 @@
   </div>
 
   <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
     const searchInput = document.getElementById("searchInput");
     const sortSelect = document.getElementById("sortSelect");
     const totalCount = document.getElementById("totalCount");
@@ -628,6 +632,20 @@
         day: "numeric",
         year: "numeric"
       }).format(date);
+    }
+
+    function isPdfFile(file) {
+      const type = clean(file?.file_type).toLowerCase();
+      const name = clean(file?.file_name).toLowerCase();
+      return type === "pdf" || name.endsWith(".pdf");
+    }
+
+    function isRealCoverUrl(url) {
+      const value = clean(url);
+      if (!value) return false;
+      if (value.startsWith("data:image/svg+xml")) return false;
+      if (value.includes("No%20custom%20cover%20available")) return false;
+      return true;
     }
 
     function normalizeFile(file) {
@@ -730,6 +748,49 @@
       `;
     }
 
+    async function renderPdfFirstPageToCover(element, pdfUrl) {
+      try {
+        const loadingTask = pdfjsLib.getDocument({
+          url: pdfUrl,
+          useWorkerFetch: true,
+          isEvalSupported: false
+        });
+
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.4 });
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+
+        await page.render({
+          canvasContext: context,
+          viewport
+        }).promise;
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+        element.style.backgroundImage = `url('${dataUrl.replaceAll("'", "%27")}')`;
+      } catch (error) {
+        console.error("PDF cover render failed:", error);
+      }
+    }
+
+    async function hydratePdfCovers() {
+      const covers = Array.from(document.querySelectorAll(".cover[data-pdf-url]"));
+
+      for (const cover of covers) {
+        const pdfUrl = clean(cover.dataset.pdfUrl);
+        if (!pdfUrl) continue;
+        if (cover.dataset.coverReady === "1") continue;
+
+        cover.dataset.coverReady = "1";
+        await renderPdfFirstPageToCover(cover, pdfUrl);
+      }
+    }
+
     function renderLectures() {
       const query = searchInput.value.trim().toLowerCase();
 
@@ -762,37 +823,45 @@
             <div class="month-count">${lectures.length} lecture${lectures.length > 1 ? "s" : ""}</div>
           </div>
           <div class="grid">
-            ${lectures.map((lecture) => `
-              <article class="card">
-                <div
-                  class="cover"
-                  style="background-image:url('${String(lecture.cover_image_url || "").replaceAll("'", "%27")}')"
-                ></div>
+            ${lectures.map((lecture) => {
+              const firstPdf = lecture.files.find(isPdfFile);
+              const realCover = isRealCoverUrl(lecture.cover_image_url);
 
-                <div class="card-body">
-                  <div class="meta-line">
-                    <span class="speaker">${escapeHtml(lecture.speaker)}</span>
-                    <span>${escapeHtml(formatLectureDate(lecture.lecture_date))}</span>
+              return `
+                <article class="card">
+                  <div
+                    class="cover"
+                    ${realCover ? `style="background-image:url('${String(lecture.cover_image_url).replaceAll("'", "%27")}')"` : ""}
+                    ${!realCover && firstPdf ? `data-pdf-url="${escapeHtml(firstPdf.file_url)}"` : ""}
+                  ></div>
+
+                  <div class="card-body">
+                    <div class="meta-line">
+                      <span class="speaker">${escapeHtml(lecture.speaker)}</span>
+                      <span>${escapeHtml(formatLectureDate(lecture.lecture_date))}</span>
+                    </div>
+
+                    <h3 class="title">${escapeHtml(lecture.title)}</h3>
+
+                    <div class="desc">${escapeHtml(lecture.description || "No description available.")}</div>
+
+                    <div class="files-head">
+                      <div class="files-title">Files (${lecture.files.length})</div>
+                      ${lecture.files[0] ? `<span class="badge">${escapeHtml(lecture.files[0].file_type || "FILE")}</span>` : ""}
+                    </div>
+
+                    ${renderFiles(lecture.files)}
                   </div>
-
-                  <h3 class="title">${escapeHtml(lecture.title)}</h3>
-
-                  <div class="desc">${escapeHtml(lecture.description || "No description available.")}</div>
-
-                  <div class="files-head">
-                    <div class="files-title">Files (${lecture.files.length})</div>
-                    ${lecture.files[0] ? `<span class="badge">${escapeHtml(lecture.files[0].file_type || "FILE")}</span>` : ""}
-                  </div>
-
-                  ${renderFiles(lecture.files)}
-                </div>
-              </article>
-            `).join("")}
+                </article>
+              `;
+            }).join("")}
           </div>
         `;
 
         libraryGrid.appendChild(section);
       }
+
+      hydratePdfCovers();
     }
 
     async function loadLectures() {
