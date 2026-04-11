@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>رفع محاضرة جديدة</title>
   <meta name="theme-color" content="#2563eb" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
   <style>
     :root{
       --bg: #f5f7fb;
@@ -22,12 +25,10 @@
       --shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
       --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
       --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Tahoma, Arial, sans-serif;
-      --max: 1180px;
+      --max: 1240px;
     }
 
-    *{
-      box-sizing:border-box;
-    }
+    *{ box-sizing:border-box; }
 
     body{
       margin:0;
@@ -62,7 +63,7 @@
       border-radius:36px;
       padding:30px;
       display:grid;
-      grid-template-columns: 1.2fr 0.8fr;
+      grid-template-columns: 1.15fr 0.85fr;
       gap:28px;
       align-items:center;
       margin-bottom:26px;
@@ -133,9 +134,7 @@
       font-family:inherit;
     }
 
-    .btn:hover{
-      transform:translateY(-1px);
-    }
+    .btn:hover{ transform:translateY(-1px); }
 
     .btn-primary{
       background:linear-gradient(180deg, var(--blue), var(--blue-2));
@@ -209,9 +208,7 @@
       border:1px solid rgba(255,255,255,0.76);
     }
 
-    .status.show{
-      display:block;
-    }
+    .status.show{ display:block; }
 
     .status.ok{
       background:var(--green-soft);
@@ -227,7 +224,7 @@
 
     .layout{
       display:grid;
-      grid-template-columns: 1.2fr 0.8fr;
+      grid-template-columns: 1.15fr 0.85fr;
       gap:22px;
       align-items:start;
     }
@@ -305,6 +302,13 @@
       line-height:1.9;
     }
 
+    .speaker-textarea{
+      min-height:110px;
+      resize:vertical;
+      line-height:1.8;
+      white-space:pre-wrap;
+    }
+
     .box{
       border:1px solid rgba(15, 23, 42, 0.06);
       border-radius:24px;
@@ -349,48 +353,6 @@
       padding:16px;
     }
 
-    .files-list{
-      display:grid;
-      gap:10px;
-      margin-top:12px;
-    }
-
-    .file-item{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:12px;
-      padding:12px 14px;
-      background:rgba(255,255,255,0.82);
-      border:1px solid rgba(15, 23, 42, 0.06);
-      border-radius:18px;
-      flex-wrap:wrap;
-    }
-
-    .file-name{
-      font-size:14px;
-      font-weight:700;
-      word-break:break-word;
-      color:var(--text);
-    }
-
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:6px;
-      padding:8px 12px;
-      border-radius:999px;
-      background:var(--blue-tint);
-      color:var(--blue);
-      font-size:12px;
-      font-weight:800;
-      text-transform:uppercase;
-      letter-spacing:0.03em;
-      border:1px solid rgba(37,99,235,0.10);
-      white-space:nowrap;
-    }
-
     .actions{
       display:flex;
       gap:12px;
@@ -398,11 +360,20 @@
       margin-top:8px;
     }
 
-    .submit-row{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-top:8px;
+    .selected-files{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .selected-file{
+      padding:12px 14px;
+      background:rgba(255,255,255,0.82);
+      border:1px solid rgba(15, 23, 42, 0.06);
+      border-radius:18px;
+      font-size:14px;
+      color:var(--text);
+      word-break:break-word;
     }
 
     .footer-note{
@@ -479,7 +450,12 @@
           <div class="grid-2">
             <div>
               <label for="speaker">المتحدث</label>
-              <input id="speaker" name="speaker" type="text" />
+              <textarea
+                id="speaker"
+                name="speaker"
+                class="speaker-textarea"
+                placeholder="Dr. Hussian Almahdi&#10;Dr. Ahmed Ali&#10;Dr. Sara Mohammed"
+              ></textarea>
             </div>
 
             <div>
@@ -511,7 +487,7 @@
             </div>
           </div>
 
-          <div class="submit-row">
+          <div class="actions">
             <button id="submitBtn" class="btn btn-primary" type="submit">إنشاء المحاضرة ورفع الملفات</button>
             <button id="resetBtn" class="btn btn-secondary" type="button">إعادة ضبط</button>
           </div>
@@ -526,24 +502,25 @@
           <div class="box">
             <div class="box-title">معاينة الغلاف</div>
             <div id="coverPreviewBox" class="placeholder">لا توجد صورة غلاف حالية.</div>
-          </div>
 
-          <div class="box">
-            <div class="box-title">رفع صورة الغلاف</div>
-            <input id="cover_file" name="cover_file" type="file" accept="image/*" />
-            <div class="small" style="margin-top:8px;">
-              إذا اخترت صورة هنا، سيتم رفعها بعد إنشاء المحاضرة.
+            <div style="margin-top:16px;">
+              <label for="cover_file">رفع صورة الغلاف</label>
+              <input id="cover_file" name="cover_file" type="file" accept="image/*" />
+              <div class="small" style="margin-top:8px;">
+                إذا اخترت صورة هنا، سيتم رفعها بعد إنشاء المحاضرة.
+              </div>
             </div>
           </div>
 
           <div class="box">
             <div class="box-title">ملفات المحاضرة</div>
+            <label for="files">اختر الملفات من الكمبيوتر</label>
             <input id="files" name="files" type="file" multiple />
             <div class="small" style="margin-top:8px;">
               يمكن اختيار أكثر من ملف. سيتم حفظ الاسم الأصلي تلقائيًا.
             </div>
 
-            <div id="selectedFiles" class="files-list"></div>
+            <div id="selectedFilesBox" class="selected-files"></div>
           </div>
         </div>
       </aside>
@@ -555,6 +532,8 @@
   </div>
 
   <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
     const form = document.getElementById("uploadForm");
     const statusBox = document.getElementById("status");
     const submitBtn = document.getElementById("submitBtn");
@@ -566,11 +545,11 @@
     const descriptionEl = document.getElementById("description");
     const coverImageUrlEl = document.getElementById("cover_image_url");
     const isPublishedEl = document.getElementById("is_published");
-
     const coverFileEl = document.getElementById("cover_file");
     const filesEl = document.getElementById("files");
-    const selectedFilesEl = document.getElementById("selectedFiles");
+
     const coverPreviewBox = document.getElementById("coverPreviewBox");
+    const selectedFilesBox = document.getElementById("selectedFilesBox");
 
     function showStatus(message, type = "ok") {
       statusBox.textContent = message;
@@ -592,46 +571,79 @@
         .replaceAll("'", "&#039;");
     }
 
-    function previewCoverFromUrl(url) {
-      const cleanUrl = String(url || "").trim();
-
-      if (!cleanUrl) {
-        coverPreviewBox.className = "placeholder";
-        coverPreviewBox.innerHTML = "لا توجد صورة غلاف حالية.";
-        return;
-      }
-
-      coverPreviewBox.className = "";
-      coverPreviewBox.innerHTML = `<img class="cover-preview" src="${escapeHtml(cleanUrl)}" alt="Cover preview" />`;
+    function clean(value) {
+      return String(value ?? "").trim();
     }
 
-    function previewCoverFromFile(file) {
-      if (!file) {
-        previewCoverFromUrl(coverImageUrlEl.value);
-        return;
-      }
+    function makePlaceholderCoverDataUrl(label = "Lecture") {
+      const safeLabel = String(label || "Lecture")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        previewCoverFromUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
+          <rect width="1200" height="675" fill="#eef2ff"/>
+          <rect x="50" y="50" width="1100" height="575" rx="28" fill="#ffffff" stroke="#dbeafe" stroke-width="3"/>
+          <circle cx="160" cy="140" r="28" fill="#2563eb" opacity="0.18"/>
+          <circle cx="1080" cy="540" r="42" fill="#2563eb" opacity="0.12"/>
+          <text x="90" y="250" font-size="34" font-family="Arial, Tahoma, sans-serif" fill="#2563eb">Lecture Library</text>
+          <text x="90" y="340" font-size="62" font-weight="700" font-family="Arial, Tahoma, sans-serif" fill="#14213d">${safeLabel}</text>
+          <text x="90" y="410" font-size="26" font-family="Arial, Tahoma, sans-serif" fill="#6b7280">No custom cover available</text>
+        </svg>
+      `.trim();
+
+      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
     }
 
     function renderSelectedFiles() {
       const files = Array.from(filesEl.files || []);
-
       if (!files.length) {
-        selectedFilesEl.innerHTML = "";
+        selectedFilesBox.innerHTML = "";
         return;
       }
 
-      selectedFilesEl.innerHTML = files.map((file) => `
-        <div class="file-item">
-          <div class="file-name">${escapeHtml(file.name)}</div>
-          <div class="badge">${escapeHtml((file.name.split(".").pop() || "FILE").toUpperCase())}</div>
-        </div>
+      selectedFilesBox.innerHTML = files.map((file) => `
+        <div class="selected-file">${escapeHtml(file.name)} • ${Math.round((file.size || 0) / 1024)} KB</div>
       `).join("");
+    }
+
+    function renderCoverFromUrl(url) {
+      const value = clean(url);
+      if (!value) return false;
+
+      coverPreviewBox.className = "";
+      coverPreviewBox.innerHTML = `<img class="cover-preview" src="${escapeHtml(value)}" alt="Cover preview" />`;
+      return true;
+    }
+
+    function renderCoverPlaceholder() {
+      const placeholder = makePlaceholderCoverDataUrl(titleEl.value.trim() || "Lecture");
+      coverPreviewBox.className = "";
+      coverPreviewBox.innerHTML = `<img class="cover-preview" src="${placeholder}" alt="Cover preview" />`;
+    }
+
+    function renderLocalImagePreview(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        coverPreviewBox.className = "";
+        coverPreviewBox.innerHTML = `<img class="cover-preview" src="${reader.result}" alt="Cover preview" />`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function refreshCoverPreview() {
+      const selectedCover = coverFileEl.files && coverFileEl.files[0];
+      if (selectedCover) {
+        renderLocalImagePreview(selectedCover);
+        return;
+      }
+
+      if (renderCoverFromUrl(coverImageUrlEl.value)) {
+        return;
+      }
+
+      renderCoverPlaceholder();
     }
 
     async function createLecture(payload) {
@@ -660,7 +672,7 @@
       formData.append("lecture_id", String(lectureId));
       formData.append("cover", file);
 
-      const res = await fetch("/api/admin-upload-cover", {
+      const res = await fetch("/api/upload-cover", {
         method: "POST",
         body: formData
       });
@@ -717,6 +729,7 @@
         }
 
         submitBtn.disabled = true;
+        resetBtn.disabled = true;
         submitBtn.textContent = "جاري الإنشاء...";
 
         const payload = {
@@ -747,43 +760,33 @@
         }
 
         showStatus("تم إنشاء المحاضرة ورفع المرفقات بنجاح.", "ok");
-
-        setTimeout(() => {
-          window.location.href = `/admin/edit-lecture/?id=${lectureId}`;
-        }, 700);
+        form.reset();
+        selectedFilesBox.innerHTML = "";
+        refreshCoverPreview();
       } catch (error) {
         showStatus(error.message || "حدث خطأ أثناء إنشاء المحاضرة.", "err");
       } finally {
         submitBtn.disabled = false;
+        resetBtn.disabled = false;
         submitBtn.textContent = "إنشاء المحاضرة ورفع الملفات";
       }
     }
 
-    function resetForm() {
+    function handleReset() {
       form.reset();
-      previewCoverFromUrl("");
-      renderSelectedFiles();
       hideStatus();
+      selectedFilesBox.innerHTML = "";
+      refreshCoverPreview();
     }
 
     form.addEventListener("submit", handleSubmit);
-    resetBtn.addEventListener("click", resetForm);
-
-    coverImageUrlEl.addEventListener("input", () => {
-      if (!(coverFileEl.files && coverFileEl.files[0])) {
-        previewCoverFromUrl(coverImageUrlEl.value);
-      }
-    });
-
-    coverFileEl.addEventListener("change", () => {
-      const file = coverFileEl.files && coverFileEl.files[0];
-      previewCoverFromFile(file);
-    });
-
+    resetBtn.addEventListener("click", handleReset);
+    coverImageUrlEl.addEventListener("input", refreshCoverPreview);
+    coverFileEl.addEventListener("change", refreshCoverPreview);
     filesEl.addEventListener("change", renderSelectedFiles);
+    titleEl.addEventListener("input", refreshCoverPreview);
 
-    previewCoverFromUrl("");
-    renderSelectedFiles();
+    refreshCoverPreview();
   </script>
 </body>
 </html>
