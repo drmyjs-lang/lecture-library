@@ -349,7 +349,7 @@
 
     .meta-line{
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:space-between;
       gap:10px;
       flex-wrap:wrap;
@@ -361,6 +361,9 @@
     .speaker{
       font-weight:700;
       color:var(--blue);
+      white-space:pre-line;
+      line-height:1.7;
+      max-width:70%;
     }
 
     .title{
@@ -520,6 +523,10 @@
       .select,
       .search{
         min-height:50px;
+      }
+
+      .speaker{
+        max-width:100%;
       }
     }
   </style>
