@@ -684,6 +684,8 @@
         speaker: clean(item?.speaker) || "Unknown speaker",
         lecture_date: clean(item?.lecture_date),
         cover_image_url: clean(item?.cover_image_url),
+        stored_cover_image_url: clean(item?.stored_cover_image_url),
+        effective_cover_image_url: clean(item?.effective_cover_image_url || item?.cover_image_url),
         files
       };
     }
@@ -838,15 +840,24 @@
           <div class="grid">
             ${lectures.map((lecture) => {
               const firstPdf = lecture.files.find(isPdfFile);
-              const placeholder = makePlaceholderCoverDataUrl(lecture.title || "Lecture");
-              const realCover = clean(lecture.cover_image_url);
+              const storedCover = clean(lecture.stored_cover_image_url);
+              const effectiveCover = clean(lecture.effective_cover_image_url);
+              const fallbackPlaceholder = makePlaceholderCoverDataUrl(lecture.title || "Lecture");
+
+              const hasManualCover = !!storedCover;
+              const hasRealThumb = !!effectiveCover && !effectiveCover.startsWith("data:image/svg+xml");
+              const initialCover = hasManualCover
+                ? storedCover
+                : hasRealThumb
+                  ? effectiveCover
+                  : fallbackPlaceholder;
 
               return `
                 <article class="card">
                   <div
                     class="cover"
-                    style="background-image:url('${(realCover || placeholder).replaceAll("'", "%27")}')"
-                    ${!realCover && firstPdf ? `data-pdf-url="${escapeHtml(buildPdfProxyUrl(firstPdf.file_url))}"` : ""}
+                    style="background-image:url('${initialCover.replaceAll("'", "%27")}')"
+                    ${!hasManualCover && !hasRealThumb && firstPdf ? `data-pdf-url="${escapeHtml(buildPdfProxyUrl(firstPdf.file_url))}"` : ""}
                   ></div>
 
                   <div class="card-body">
@@ -884,7 +895,7 @@
         emptyEl.style.display = "none";
         libraryGrid.innerHTML = "";
 
-        const res = await fetch("/api/lectures");
+        const res = await fetch("/api/lectures?published=all");
         const data = await res.json();
 
         if (!res.ok) {
