@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>تعديل المحاضرة</title>
   <meta name="theme-color" content="#2563eb" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
   <style>
     :root{
       --bg: #f5f7fb;
@@ -25,9 +28,7 @@
       --max: 1240px;
     }
 
-    *{
-      box-sizing:border-box;
-    }
+    *{ box-sizing:border-box; }
 
     body{
       margin:0;
@@ -133,9 +134,7 @@
       font-family:inherit;
     }
 
-    .btn:hover{
-      transform:translateY(-1px);
-    }
+    .btn:hover{ transform:translateY(-1px); }
 
     .btn-primary{
       background:linear-gradient(180deg, var(--blue), var(--blue-2));
@@ -209,9 +208,7 @@
       border:1px solid rgba(255,255,255,0.76);
     }
 
-    .status.show{
-      display:block;
-    }
+    .status.show{ display:block; }
 
     .status.ok{
       background:var(--green-soft);
@@ -523,7 +520,7 @@
               <label for="cover_image_url">رابط الغلاف المخصص</label>
               <input id="cover_image_url" name="cover_image_url" type="text" />
               <div class="small" style="margin-top:8px;">
-                إذا كان الحقل فارغًا، سيستخدم النظام الغلاف التلقائي من thumbnail أو placeholder.
+                إذا كان الحقل فارغًا، سيستخدم النظام الغلاف التلقائي من أول PDF أو placeholder.
               </div>
             </div>
 
@@ -592,6 +589,8 @@
   </div>
 
   <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
     const statusBox = document.getElementById("status");
     const loadingEl = document.getElementById("loading");
     const pageContent = document.getElementById("pageContent");
@@ -641,6 +640,20 @@
         .replaceAll("'", "&#039;");
     }
 
+    function clean(value) {
+      return String(value ?? "").trim();
+    }
+
+    function isPdfFile(file) {
+      const type = clean(file?.file_type).toLowerCase();
+      const name = clean(file?.file_name).toLowerCase();
+      return type === "pdf" || name.endsWith(".pdf");
+    }
+
+    function buildPdfProxyUrl(fileUrl) {
+      return `/api/file-proxy?url=${encodeURIComponent(fileUrl)}`;
+    }
+
     function makePlaceholderCoverDataUrl(label = "Lecture") {
       const safeLabel = String(label || "Lecture")
         .replace(/&/g, "&amp;")
@@ -651,6 +664,8 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
           <rect width="1200" height="675" fill="#eef2ff"/>
           <rect x="50" y="50" width="1100" height="575" rx="28" fill="#ffffff" stroke="#dbeafe" stroke-width="3"/>
+          <circle cx="160" cy="140" r="28" fill="#2563eb" opacity="0.18"/>
+          <circle cx="1080" cy="540" r="42" fill="#2563eb" opacity="0.12"/>
           <text x="90" y="250" font-size="34" font-family="Arial, Tahoma, sans-serif" fill="#2563eb">Lecture Library</text>
           <text x="90" y="340" font-size="62" font-weight="700" font-family="Arial, Tahoma, sans-serif" fill="#14213d">${safeLabel}</text>
           <text x="90" y="410" font-size="26" font-family="Arial, Tahoma, sans-serif" fill="#6b7280">No custom cover available</text>
@@ -660,29 +675,54 @@
       return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
     }
 
-    function getAutoCoverUrl() {
-      const manual = coverImageUrlEl.value.trim();
-      if (manual) return manual;
+    async function renderPdfFirstPageToImg(imgElement, pdfUrl) {
+      try {
+        const loadingTask = pdfjsLib.getDocument({
+          url: pdfUrl,
+          useWorkerFetch: true,
+          isEvalSupported: false
+        });
 
-      for (const file of currentFiles) {
-        const thumb = String(file?.thumbnail_url || "").trim();
-        if (thumb) return thumb;
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.4 });
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        canvas.width = Math.ceil(viewport.width);
+        canvas.height = Math.ceil(viewport.height);
+
+        await page.render({
+          canvasContext: context,
+          viewport
+        }).promise;
+
+        imgElement.src = canvas.toDataURL("image/jpeg", 0.92);
+      } catch (error) {
+        console.error("PDF preview render failed:", error);
       }
-
-      return makePlaceholderCoverDataUrl(currentTitle || titleEl.value.trim() || "Lecture");
     }
 
     function renderCover() {
-      const coverUrl = getAutoCoverUrl();
+      const manual = clean(coverImageUrlEl.value);
 
-      if (!coverUrl) {
-        coverPreviewBox.className = "placeholder";
-        coverPreviewBox.innerHTML = "لا توجد صورة غلاف.";
+      if (manual) {
+        coverPreviewBox.className = "";
+        coverPreviewBox.innerHTML = `<img class="cover-preview" src="${escapeHtml(manual)}" alt="Cover preview" />`;
         return;
       }
 
+      const firstPdf = currentFiles.find(isPdfFile);
+      const placeholder = makePlaceholderCoverDataUrl(currentTitle || titleEl.value.trim() || "Lecture");
+
       coverPreviewBox.className = "";
-      coverPreviewBox.innerHTML = `<img class="cover-preview" src="${escapeHtml(coverUrl)}" alt="Cover preview" />`;
+      coverPreviewBox.innerHTML = `<img id="coverPreviewImage" class="cover-preview" src="${placeholder}" alt="Cover preview" />`;
+
+      if (firstPdf && firstPdf.file_url) {
+        const img = document.getElementById("coverPreviewImage");
+        renderPdfFirstPageToImg(img, buildPdfProxyUrl(firstPdf.file_url));
+      }
     }
 
     function moveFileUp(id) {
@@ -722,7 +762,7 @@
 
             <div class="small">${file.file_type ? `النوع: ${escapeHtml(String(file.file_type).toUpperCase())}` : ""}</div>
             <div class="small">${escapeHtml(file.file_url || "")}</div>
-            <div class="small">${file.thumbnail_url ? `Thumbnail: ${escapeHtml(file.thumbnail_url)}` : "لا يوجد thumbnail لهذا الملف"}</div>
+            <div class="small">${file.thumbnail_url ? `Thumbnail: ${escapeHtml(file.thumbnail_url)}` : "لا يوجد thumbnail محفوظ لهذا الملف"}</div>
           </div>
 
           <div class="file-actions">
