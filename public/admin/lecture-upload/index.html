@@ -4,563 +4,1252 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>رفع محاضرة جديدة</title>
-  <meta name="theme-color" content="#2563eb" />
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
 
   <style>
-    :root{
-      --bg: #f5f7fb;
-      --card: rgba(255,255,255,0.86);
-      --text: #14213d;
-      --muted: #667085;
-      --line: rgba(15, 23, 42, 0.08);
-      --blue: #2563eb;
-      --blue-2: #1d4ed8;
-      --blue-tint: #eff6ff;
-      --red: #dc2626;
-      --red-soft: #fee2e2;
-      --green: #16a34a;
-      --green-soft: #dcfce7;
-      --shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
-      --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
-      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Tahoma, Arial, sans-serif;
-      --max: 1240px;
+    :root {
+      --bg: #eef5ff;
+      --bg-soft: #f8fbff;
+      --card: rgba(255, 255, 255, 0.88);
+      --card-solid: #ffffff;
+      --text: #10243e;
+      --muted: #5f738d;
+      --line: rgba(13, 111, 184, 0.14);
+      --blue: #0d6fb8;
+      --blue-dark: #084a86;
+      --blue-soft: #3ca3d8;
+      --blue-pale: #dff1ff;
+      --success-bg: #ecfdf3;
+      --success-text: #0f8a4b;
+      --warn-bg: #fff7ed;
+      --warn-text: #c46a12;
+      --danger-bg: #fff1f2;
+      --danger-text: #c92a4b;
+      --shadow-lg: 0 28px 70px rgba(11, 64, 122, 0.14);
+      --shadow-md: 0 18px 40px rgba(15, 78, 145, 0.1);
+      --shadow-sm: 0 10px 24px rgba(17, 72, 128, 0.08);
+      --radius-xl: 34px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 14px;
+      --transition: 0.22s ease;
     }
 
-    *{ box-sizing:border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-    body{
-      margin:0;
-      font-family:var(--font-stack);
-      color:var(--text);
+    html, body {
+      margin: 0;
+      min-height: 100%;
       background:
-        radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 26%),
-        radial-gradient(circle at top right, rgba(37,99,235,0.06), transparent 22%),
-        linear-gradient(180deg, #f8fbff 0%, #f5f7fb 100%);
-      min-height:100vh;
+        radial-gradient(circle at top right, rgba(60, 163, 216, 0.18), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(13, 111, 184, 0.1), transparent 32%),
+        linear-gradient(180deg, #f5faff 0%, #edf5ff 52%, #eaf2fc 100%);
+      color: var(--text);
+      font-family: "Manrope", "IBM Plex Sans Arabic", sans-serif;
     }
 
-    a{
-      color:inherit;
-      text-decoration:none;
+    body {
+      padding: 26px;
     }
 
-    .shell{
-      max-width:var(--max);
-      margin:0 auto;
-      padding:28px 18px 60px;
+    a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    .hero{
-      position:relative;
-      overflow:hidden;
-      background:linear-gradient(135deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border:1px solid rgba(255,255,255,0.72);
-      box-shadow:var(--shadow);
-      border-radius:36px;
-      padding:30px;
-      display:grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap:28px;
-      align-items:center;
-      margin-bottom:26px;
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
     }
 
-    .hero::before{
-      content:"";
-      position:absolute;
-      inset:auto -90px -120px auto;
-      width:280px;
-      height:280px;
-      border-radius:50%;
-      background:radial-gradient(circle, rgba(37,99,235,0.14), transparent 65%);
-      pointer-events:none;
+    .shell {
+      max-width: 1480px;
+      margin: 0 auto;
     }
 
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:-80px auto auto -80px;
-      width:220px;
-      height:220px;
-      border-radius:50%;
-      background:radial-gradient(circle, rgba(37,99,235,0.08), transparent 65%);
-      pointer-events:none;
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 22px;
+      border: 1px solid rgba(255,255,255,0.62);
+      background: rgba(255,255,255,0.66);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 22px;
     }
 
-    .hero-copy{
-      position:relative;
-      z-index:1;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-width: 0;
     }
 
-    .hero-title{
-      margin:0;
-      font-size:clamp(30px, 5vw, 54px);
-      line-height:1.04;
-      letter-spacing:-0.03em;
-      font-weight:800;
+    .brand-mark {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(13,111,184,0.16), rgba(60,163,216,0.08)),
+        #ffffff;
+      border: 1px solid rgba(13,111,184,0.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), var(--shadow-sm);
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 24px;
+      font-weight: 800;
+      flex: 0 0 auto;
     }
 
-    .hero-sub{
-      margin:14px 0 0;
-      font-size:17px;
-      color:var(--muted);
-      line-height:1.9;
-      max-width:720px;
+    .brand-copy {
+      min-width: 0;
     }
 
-    .hero-actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:12px;
-      margin-top:24px;
+    .brand-title {
+      margin: 0 0 4px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
-    .btn{
-      border:none;
-      border-radius:999px;
-      padding:13px 18px;
-      font-size:14px;
-      font-weight:700;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      transition:transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
-      font-family:inherit;
+    .brand-sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
     }
 
-    .btn:hover{ transform:translateY(-1px); }
-
-    .btn-primary{
-      background:linear-gradient(180deg, var(--blue), var(--blue-2));
-      color:#fff;
-      box-shadow:0 10px 24px rgba(37,99,235,0.24);
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
-    .btn-secondary{
-      background:#fff;
-      color:var(--text);
-      border:1px solid var(--line);
-      box-shadow:var(--shadow-soft);
+    .link-btn,
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .ghost-btn {
+      border: 0;
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition), background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition);
+      white-space: nowrap;
     }
 
-    .btn-danger{
-      background:var(--red-soft);
-      color:var(--red);
-      border:1px solid rgba(220,38,38,0.08);
-      box-shadow:var(--shadow-soft);
+    .link-btn {
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(13,111,184,0.14);
+      color: var(--text);
+      font-weight: 700;
+      box-shadow: 0 10px 22px rgba(18, 72, 128, 0.08);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .btn-success{
-      background:var(--green-soft);
-      color:var(--green);
-      border:1px solid rgba(22,163,74,0.08);
-      box-shadow:var(--shadow-soft);
+    .link-btn:hover,
+    .primary-btn:hover,
+    .secondary-btn:hover,
+    .danger-btn:hover,
+    .ghost-btn:hover {
+      transform: translateY(-1px);
     }
 
-    .hero-brand{
-      position:relative;
-      z-index:1;
-      display:flex;
-      justify-content:center;
-      align-items:center;
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
     }
 
-    .hero-brand-card{
-      width:100%;
-      max-width:430px;
-      min-height:240px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:rgba(255,255,255,0.72);
-      border:1px solid rgba(255,255,255,0.82);
-      border-radius:30px;
-      padding:22px;
-      box-shadow:var(--shadow-soft);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
+    .hero-panel,
+    .preview-panel,
+    .form-card,
+    .side-card,
+    .status {
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255,255,255,0.7);
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-md);
     }
 
-    .hero-logo{
-      display:block;
-      width:100%;
-      max-height:220px;
-      object-fit:contain;
-      border-radius:18px;
-      background:transparent;
-      padding:0;
+    .hero-panel {
+      padding: 30px 30px 26px;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
     }
 
-    .status{
-      display:none;
-      margin-bottom:18px;
-      padding:16px 18px;
-      border-radius:20px;
-      font-size:15px;
-      box-shadow:var(--shadow-soft);
-      background:rgba(255,255,255,0.82);
-      border:1px solid rgba(255,255,255,0.76);
+    .hero-panel::before {
+      content: "";
+      position: absolute;
+      inset: auto -80px -110px auto;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(60,163,216,0.22), transparent 62%);
+      z-index: -1;
     }
 
-    .status.show{ display:block; }
-
-    .status.ok{
-      background:var(--green-soft);
-      color:#166534;
-      border-color:rgba(22,163,74,0.08);
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(13,111,184,0.08);
+      color: var(--blue-dark);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 18px;
     }
 
-    .status.err{
-      background:var(--red-soft);
-      color:#991b1b;
-      border-color:rgba(220,38,38,0.08);
+    .hero-title {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      font-weight: 800;
+      max-width: 760px;
     }
 
-    .layout{
-      display:grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap:22px;
-      align-items:start;
+    .hero-desc {
+      margin: 0 0 22px;
+      max-width: 740px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.9;
     }
 
-    .panel{
-      background:rgba(255,255,255,0.84);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border:1px solid rgba(255,255,255,0.78);
-      border-radius:30px;
-      box-shadow:var(--shadow-soft);
-      padding:22px;
+    .hero-points {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    .panel-title{
-      margin:0 0 6px;
-      font-size:28px;
-      font-weight:800;
-      letter-spacing:-0.03em;
+    .hero-point {
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.74);
+      border: 1px solid rgba(13,111,184,0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
     }
 
-    .panel-sub{
-      margin:0 0 18px;
-      color:var(--muted);
-      line-height:1.8;
-      font-size:14px;
+    .hero-point strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
     }
 
-    .grid{
-      display:grid;
-      gap:16px;
+    .hero-point span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
     }
 
-    .grid-2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px;
+    .preview-panel {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    label{
-      display:block;
-      font-size:14px;
-      margin-bottom:8px;
-      color:var(--text);
-      font-weight:700;
+    .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 4px 0;
+    }
+
+    .preview-head h2 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .preview-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(13,111,184,0.08);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .preview-card {
+      overflow: hidden;
+      border-radius: 28px;
+      background: var(--card-solid);
+      border: 1px solid rgba(13,111,184,0.08);
+      box-shadow: var(--shadow-sm);
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .preview-cover {
+      height: 210px;
+      background:
+        linear-gradient(135deg, rgba(8,74,134,0.88), rgba(60,163,216,0.86)),
+        #e9f5ff;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.08));
+    }
+
+    .preview-cover-label {
+      position: absolute;
+      top: 16px;
+      inset-inline-start: 16px;
+      z-index: 1;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.88);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 10px 24px rgba(5, 41, 73, 0.12);
+    }
+
+    .preview-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .preview-meta {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .preview-speaker {
+      font-weight: 700;
+      color: var(--blue-dark);
+      white-space: pre-line;
+    }
+
+    .preview-title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+    }
+
+    .preview-desc {
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 14px;
+      min-height: 52px;
+    }
+
+    .preview-files {
+      border-top: 1px solid rgba(13,111,184,0.08);
+      padding-top: 14px;
+    }
+
+    .preview-files-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .preview-files-title {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .preview-file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 13px;
+      border-radius: 14px;
+      background: #f7fbff;
+      border: 1px solid rgba(13,111,184,0.08);
+      margin-bottom: 8px;
+    }
+
+    .preview-file-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .preview-badge {
+      flex: 0 0 auto;
+      padding: 6px 9px;
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 800;
+      box-shadow: 0 8px 16px rgba(14, 81, 145, 0.08);
+      text-transform: uppercase;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .form-card,
+    .side-card {
+      padding: 22px;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .card-head h2,
+    .side-card h3 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+      font-weight: 800;
+    }
+
+    .card-head p,
+    .side-card p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .field,
+    .field-full,
+    .upload-box,
+    .mini-note,
+    .selected-files,
+    .success-box {
+      border: 1px solid rgba(13,111,184,0.08);
+      background: rgba(255,255,255,0.72);
+      border-radius: 22px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.96);
+    }
+
+    .field,
+    .field-full {
+      padding: 16px;
+    }
+
+    .field-full {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--blue-dark);
+    }
+
+    .help {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
     }
 
     input[type="text"],
     input[type="date"],
     textarea,
-    select,
-    input[type="file"]{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:18px;
-      padding:14px 16px;
-      font-size:15px;
-      font-family:inherit;
-      outline:none;
-      background:rgba(255,255,255,0.92);
-      color:var(--text);
-      box-shadow:inset 0 1px 0 rgba(255,255,255,0.5);
+    select {
+      width: 100%;
+      border: 1px solid rgba(13,111,184,0.1);
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 14px 15px;
+      color: var(--text);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+      box-shadow: 0 6px 16px rgba(12, 78, 140, 0.04);
     }
 
-    input:focus,
+    input[type="text"]:focus,
+    input[type="date"]:focus,
     textarea:focus,
-    select:focus{
-      border-color:rgba(37,99,235,0.35);
-      box-shadow:0 0 0 4px rgba(37,99,235,0.10);
+    select:focus {
+      border-color: rgba(13,111,184,0.35);
+      box-shadow: 0 0 0 4px rgba(13,111,184,0.1);
+      background: #ffffff;
     }
 
-    textarea{
-      min-height:150px;
-      resize:vertical;
-      line-height:1.9;
+    textarea {
+      resize: vertical;
+      min-height: 128px;
     }
 
-    .speaker-textarea{
-      min-height:110px;
-      resize:vertical;
-      line-height:1.8;
-      white-space:pre-wrap;
+    .upload-box {
+      padding: 16px;
+      margin-bottom: 16px;
     }
 
-    .box{
-      border:1px solid rgba(15, 23, 42, 0.06);
-      border-radius:24px;
-      background:rgba(255,255,255,0.70);
-      padding:16px;
+    .upload-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
     }
 
-    .box-title{
-      font-weight:800;
-      margin-bottom:10px;
-      font-size:15px;
+    .upload-top h3 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
 
-    .small{
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.8;
-      word-break:break-word;
+    .upload-top p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
     }
 
-    .cover-preview{
-      width:100%;
-      max-width:100%;
-      aspect-ratio:16/9;
-      object-fit:cover;
-      border-radius:20px;
-      border:1px solid rgba(15, 23, 42, 0.06);
-      background:#fff;
-      display:block;
+    .upload-area {
+      position: relative;
+      border: 1.5px dashed rgba(13,111,184,0.22);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.82), rgba(239,247,255,0.82));
+      border-radius: 22px;
+      padding: 18px;
+      min-height: 132px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
     }
 
-    .placeholder{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:180px;
-      border-radius:20px;
-      border:1px dashed rgba(15, 23, 42, 0.10);
-      color:var(--muted);
-      background:rgba(255,255,255,0.55);
-      text-align:center;
-      padding:16px;
+    .upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
     }
 
-    .actions{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-top:8px;
+    .upload-area strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: var(--text);
     }
 
-    .selected-files{
-      margin-top:12px;
-      display:grid;
-      gap:10px;
+    .upload-area span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
     }
 
-    .selected-file{
-      padding:12px 14px;
-      background:rgba(255,255,255,0.82);
-      border:1px solid rgba(15, 23, 42, 0.06);
-      border-radius:18px;
-      font-size:14px;
-      color:var(--text);
-      word-break:break-word;
+    .cover-preview-inline {
+      margin-top: 14px;
+      border-radius: 20px;
+      height: 180px;
+      background:
+        linear-gradient(135deg, rgba(8,74,134,0.88), rgba(60,163,216,0.86)),
+        #ebf6ff;
+      background-size: cover;
+      background-position: center;
+      border: 1px solid rgba(13,111,184,0.1);
+      overflow: hidden;
+      position: relative;
     }
 
-    .footer-note{
-      text-align:center;
-      color:var(--muted);
-      font-size:13px;
-      padding-top:28px;
+    .cover-preview-inline::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.08));
     }
 
-    @media (max-width: 1120px){
+    .selected-files {
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .selected-files.empty {
+      display: none;
+    }
+
+    .selected-files h4 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .selected-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: #f8fbff;
+      border: 1px solid rgba(13,111,184,0.08);
+      margin-bottom: 8px;
+    }
+
+    .selected-file:last-child {
+      margin-bottom: 0;
+    }
+
+    .selected-file-main {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .selected-file-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(13,111,184,0.08);
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      flex: 0 0 auto;
+    }
+
+    .selected-file-text {
+      min-width: 0;
+    }
+
+    .selected-file-name {
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .selected-file-size {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mini-note {
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .mini-note strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .mini-note span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .status {
+      display: none;
+      padding: 16px 18px;
+      margin-bottom: 18px;
+      line-height: 1.8;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.ok {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-color: rgba(15,138,75,0.14);
+      box-shadow: 0 14px 30px rgba(15,138,75,0.08);
+    }
+
+    .status.warn {
+      background: var(--warn-bg);
+      color: var(--warn-text);
+      border-color: rgba(196,106,18,0.14);
+      box-shadow: 0 14px 30px rgba(196,106,18,0.08);
+    }
+
+    .status.err {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-color: rgba(201,42,75,0.14);
+      box-shadow: 0 14px 30px rgba(201,42,75,0.08);
+    }
+
+    .actions-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .ghost-btn {
+      padding: 14px 20px;
+      border-radius: 18px;
+      font-weight: 800;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+      color: #fff;
+      box-shadow: 0 18px 34px rgba(13,111,184,0.26);
+    }
+
+    .secondary-btn {
+      background: rgba(13,111,184,0.08);
+      color: var(--blue-dark);
+      border: 1px solid rgba(13,111,184,0.12);
+    }
+
+    .danger-btn {
+      background: rgba(201,42,75,0.08);
+      color: #b12143;
+      border: 1px solid rgba(201,42,75,0.12);
+    }
+
+    .ghost-btn {
+      background: #ffffff;
+      color: var(--text);
+      border: 1px solid rgba(13,111,184,0.12);
+      box-shadow: 0 12px 26px rgba(18, 72, 128, 0.08);
+    }
+
+    .primary-btn:disabled,
+    .secondary-btn:disabled,
+    .danger-btn:disabled,
+    .ghost-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .side-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: sticky;
+      top: 22px;
+    }
+
+    .tips-list {
+      margin: 14px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .tips-list li {
+      padding: 13px 14px;
+      border-radius: 16px;
+      background: rgba(13,111,184,0.06);
+      color: var(--text);
+      line-height: 1.8;
+      font-size: 13px;
+      border: 1px solid rgba(13,111,184,0.08);
+    }
+
+    .steps {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.76);
+      border: 1px solid rgba(13,111,184,0.08);
+    }
+
+    .step-no {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--blue-dark);
+      background: rgba(13,111,184,0.08);
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .step span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .success-box {
+      display: none;
+      padding: 16px;
+      margin-top: 18px;
+    }
+
+    .success-box.show {
+      display: block;
+    }
+
+    .success-box h4 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .success-box p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .success-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .muted-small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1180px) {
       .hero,
-      .layout{
-        grid-template-columns:1fr;
+      .content-grid {
+        grid-template-columns: 1fr;
       }
 
-      .hero-brand{
-        justify-content:flex-start;
+      .side-stack {
+        position: static;
       }
     }
 
-    @media (max-width: 760px){
-      .grid-2{
-        grid-template-columns:1fr;
+    @media (max-width: 820px) {
+      body {
+        padding: 14px;
       }
 
-      .hero{
-        padding:22px;
+      .topbar,
+      .hero-panel,
+      .preview-panel,
+      .form-card,
+      .side-card {
+        border-radius: 24px;
       }
 
-      .hero-title{
-        font-size:40px;
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .topbar-actions {
+        justify-content: stretch;
+      }
+
+      .topbar-actions > * {
+        flex: 1 1 auto;
+        text-align: center;
+        justify-content: center;
+      }
+
+      .hero-points,
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-meta,
+      .upload-top,
+      .card-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .actions-row > * {
+        width: 100%;
+      }
+
+      .success-actions > * {
+        width: 100%;
+        justify-content: center;
       }
     }
   </style>
 </head>
 <body>
   <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">🎓</div>
+        <div class="brand-copy">
+          <h1 class="brand-title">رفع محاضرة جديدة</h1>
+          <p class="brand-sub">واجهة جديدة بهوية أنيقة ونظيفة، مع معاينة مباشرة قبل الحفظ ورفع الغلاف والملفات بنفس التدفق الحالي.</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <a class="link-btn" href="/admin/">لوحة الإدارة</a>
+        <a class="link-btn" href="/lecture-library/" target="_blank" rel="noopener">المكتبة العامة</a>
+      </div>
+    </header>
+
     <section class="hero">
-      <div class="hero-copy">
-        <h1 class="hero-title">رفع محاضرة جديدة</h1>
-        <p class="hero-sub">أنشئ محاضرة جديدة، ثم أضف الغلاف والملفات بنفس الواجهة الاحترافية الجديدة.</p>
+      <div class="hero-panel">
+        <div class="eyebrow">واجهة جديدة · Lecture Upload</div>
+        <h2 class="hero-title">ارفع المحاضرة بشكل مرتب، سريع، واحترافي.</h2>
+        <p class="hero-desc">
+          أدخل بيانات المحاضرة، اكتب كل speaker في سطر مستقل، ثم ارفع الغلاف والملفات.
+          ستشاهد معاينة فورية للبطاقة كما ستظهر داخل المكتبة تقريبًا.
+        </p>
 
-        <div class="hero-actions">
-          <a class="btn btn-secondary" href="/admin/">العودة إلى لوحة الإدارة</a>
-          <a class="btn btn-secondary" href="/lecture-library/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
+        <div class="hero-points">
+          <div class="hero-point">
+            <strong>ستايل أنظف</strong>
+            <span>بطاقات كبيرة، زوايا ناعمة، ألوان هادئة، وتباين أوضح للعناوين والحقول.</span>
+          </div>
+          <div class="hero-point">
+            <strong>معاينة مباشرة</strong>
+            <span>عنوان المحاضرة، المتحدثون، الغلاف، وعدد الملفات يتحدثون فورًا أثناء الكتابة.</span>
+          </div>
+          <div class="hero-point">
+            <strong>رفع منظم</strong>
+            <span>إنشاء المحاضرة أولًا ثم رفع الغلاف والملفات تلقائيًا في نفس العملية.</span>
+          </div>
         </div>
       </div>
 
-      <div class="hero-brand">
-        <div class="hero-brand-card">
-          <img
-            class="hero-logo"
-            src="/assets/alahsa-health-cluster-logo.jpg.jpg"
-            alt="Alahsa Health Cluster Logo"
-            onerror="this.style.display='none';"
-          />
+      <aside class="preview-panel">
+        <div class="preview-head">
+          <h2>المعاينة المباشرة</h2>
+          <div class="preview-chip" id="previewPublishChip">منشورة</div>
         </div>
-      </div>
-    </section>
 
-    <div id="status" class="status"></div>
-
-    <div class="layout">
-      <section class="panel">
-        <h2 class="panel-title">بيانات المحاضرة</h2>
-        <p class="panel-sub">أدخل المعلومات الأساسية، ثم اضغط إنشاء المحاضرة. بعد ذلك سيتم رفع الغلاف والملفات تلقائيًا إن وجدت.</p>
-
-        <form id="uploadForm" class="grid">
-          <div>
-            <label for="title">عنوان المحاضرة</label>
-            <input id="title" name="title" type="text" required />
+        <article class="preview-card">
+          <div class="preview-cover" id="previewCover">
+            <div class="preview-cover-label">Cover Preview</div>
           </div>
 
-          <div class="grid-2">
+          <div class="preview-body">
+            <div class="preview-meta">
+              <div class="preview-speaker" id="previewSpeaker">اسم المتحدث</div>
+              <div id="previewDate">تاريخ المحاضرة</div>
+            </div>
+
+            <h3 class="preview-title" id="previewTitle">عنوان المحاضرة</h3>
+            <div class="preview-desc" id="previewDescription">سيظهر وصف المحاضرة هنا بعد كتابته.</div>
+
+            <div class="preview-files">
+              <div class="preview-files-head">
+                <div class="preview-files-title" id="previewFilesTitle">الملفات (0)</div>
+                <div class="preview-badge" id="previewFirstType">FILE</div>
+              </div>
+              <div id="previewFilesList">
+                <div class="preview-file-row">
+                  <div class="preview-file-name">لا توجد ملفات مرفقة حتى الآن</div>
+                  <div class="preview-badge">FILE</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </section>
+
+    <div class="content-grid">
+      <main>
+        <div class="status" id="statusBox"></div>
+
+        <section class="form-card">
+          <div class="card-head">
             <div>
-              <label for="speaker">المتحدث</label>
+              <h2>بيانات المحاضرة</h2>
+              <p>املأ الحقول التالية، ثم اضغط إنشاء المحاضرة. الصفحة سترفع الغلاف والملفات تلقائيًا بعد إنشاء السجل الأساسي.</p>
+            </div>
+          </div>
+
+          <form id="lectureForm" novalidate>
+            <div class="section-grid">
+              <div class="field">
+                <label for="title">عنوان المحاضرة</label>
+                <input id="title" name="title" type="text" placeholder="مثال: Acute Care in Primary Health Care" required />
+              </div>
+
+              <div class="field">
+                <label for="lectureDate">تاريخ المحاضرة</label>
+                <input id="lectureDate" name="lecture_date" type="date" required />
+              </div>
+            </div>
+
+            <div class="section-grid">
+              <div class="field">
+                <label for="isPublished">حالة الظهور</label>
+                <select id="isPublished" name="is_published">
+                  <option value="1" selected>منشورة</option>
+                  <option value="0">مخفية مؤقتًا</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="slugPreview">ملاحظة</label>
+                <input id="slugPreview" type="text" value="سيتم إنشاء slug تلقائيًا من العنوان داخل الـ API" readonly />
+              </div>
+            </div>
+
+            <div class="field-full">
+              <label for="speaker">Speaker / Speakers</label>
               <textarea
                 id="speaker"
                 name="speaker"
-                class="speaker-textarea"
-                placeholder="Dr. Hussian Almahdi&#10;Dr. Ahmed Ali&#10;Dr. Sara Mohammed"
+                placeholder="اكتب كل speaker في سطر مستقل&#10;مثال:&#10;Dr. Hassan Alhawaj&#10;Dr. Majdi N. Al-Jasim"
+              ></textarea>
+              <div class="help">كل سطر سيُحفظ كاسم مستقل داخل نفس الحقل، ويمكن عرضه لاحقًا كسطور منفصلة.</div>
+            </div>
+
+            <div class="field-full">
+              <label for="description">وصف المحاضرة</label>
+              <textarea
+                id="description"
+                name="description"
+                placeholder="اكتب وصفًا مختصرًا ومرتبًا للمحاضرة..."
               ></textarea>
             </div>
 
-            <div>
-              <label for="lecture_date">تاريخ المحاضرة</label>
-              <input id="lecture_date" name="lecture_date" type="date" required />
+            <div class="upload-box">
+              <div class="upload-top">
+                <div>
+                  <h3>غلاف المحاضرة</h3>
+                  <p>يمكنك تركه فارغًا، أو رفع صورة غلاف مخصصة. إذا لم تضف غلافًا فسيتم لاحقًا الاعتماد على الغلاف المتاح في النظام.</p>
+                </div>
+              </div>
+
+              <div class="upload-area">
+                <input id="coverFile" type="file" accept="image/*" />
+                <div>
+                  <strong>اضغط لاختيار صورة الغلاف</strong>
+                  <span>PNG / JPG / WEBP أو أي صورة مدعومة.</span>
+                </div>
+              </div>
+
+              <div class="cover-preview-inline" id="coverInlinePreview"></div>
             </div>
-          </div>
 
-          <div>
-            <label for="description">الوصف</label>
-            <textarea id="description" name="description"></textarea>
-          </div>
+            <div class="upload-box">
+              <div class="upload-top">
+                <div>
+                  <h3>ملفات المحاضرة</h3>
+                  <p>يمكنك رفع أكثر من ملف دفعة واحدة مثل PDF أو PPT أو DOCX أو صور.</p>
+                </div>
+              </div>
 
-          <div class="grid-2">
-            <div>
-              <label for="cover_image_url">رابط صورة الغلاف</label>
-              <input id="cover_image_url" name="cover_image_url" type="text" />
-              <div class="small" style="margin-top:8px;">
-                يمكنك كتابة رابط غلاف، أو تركه فارغًا ورفع صورة من الكمبيوتر.
+              <div class="upload-area">
+                <input id="lectureFiles" type="file" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp" />
+                <div>
+                  <strong>اضغط لاختيار ملفات المحاضرة</strong>
+                  <span>يمكنك اختيار عدة ملفات معًا، وسيتم إرسالها بعد إنشاء المحاضرة.</span>
+                </div>
+              </div>
+
+              <div class="selected-files empty" id="selectedFilesBox">
+                <h4>الملفات المختارة</h4>
+                <div id="selectedFilesList"></div>
               </div>
             </div>
 
-            <div>
-              <label for="is_published">الحالة</label>
-              <select id="is_published" name="is_published">
-                <option value="1">منشور</option>
-                <option value="0">غير منشور</option>
-              </select>
+            <div class="actions-row">
+              <button class="primary-btn" type="submit" id="submitBtn">إنشاء المحاضرة</button>
+              <button class="secondary-btn" type="button" id="resetBtn">تفريغ الحقول</button>
             </div>
-          </div>
 
-          <div class="actions">
-            <button id="submitBtn" class="btn btn-primary" type="submit">إنشاء المحاضرة ورفع الملفات</button>
-            <button id="resetBtn" class="btn btn-secondary" type="button">إعادة ضبط</button>
-          </div>
-        </form>
-      </section>
+            <div class="success-box" id="successBox">
+              <h4>تم إنشاء المحاضرة</h4>
+              <p id="successText">يمكنك الآن الانتقال إلى صفحة التعديل أو مراجعة المكتبة العامة.</p>
+              <div class="success-actions" id="successActions"></div>
+            </div>
+          </form>
+        </section>
+      </main>
 
-      <aside class="panel">
-        <h2 class="panel-title">المرفقات والمعاينة</h2>
-        <p class="panel-sub">يمكنك رفع صورة غلاف من الكمبيوتر وإضافة أكثر من ملف للمحاضرة في نفس العملية.</p>
+      <aside class="side-stack">
+        <section class="side-card">
+          <h3>تسلسل العمل</h3>
+          <p>الرفع الآن يعمل بنفس المنطق الحالي لكن داخل واجهة أوضح وأسهل.</p>
 
-        <div class="grid">
-          <div class="box">
-            <div class="box-title">معاينة الغلاف</div>
-            <div id="coverPreviewBox" class="placeholder">لا توجد صورة غلاف حالية.</div>
+          <div class="steps">
+            <div class="step">
+              <div class="step-no">1</div>
+              <div>
+                <strong>إنشاء سجل المحاضرة</strong>
+                <span>يتم إرسال title وspeaker وlecture_date وdescription وis_published إلى `/api/lectures`.</span>
+              </div>
+            </div>
 
-            <div style="margin-top:16px;">
-              <label for="cover_file">رفع صورة الغلاف</label>
-              <input id="cover_file" name="cover_file" type="file" accept="image/*" />
-              <div class="small" style="margin-top:8px;">
-                إذا اخترت صورة هنا، سيتم رفعها بعد إنشاء المحاضرة.
+            <div class="step">
+              <div class="step-no">2</div>
+              <div>
+                <strong>رفع الغلاف</strong>
+                <span>إذا اخترت صورة، سيتم إرسالها تلقائيًا إلى `/api/admin-upload-cover` مع `lecture_id`.</span>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-no">3</div>
+              <div>
+                <strong>رفع ملفات المحاضرة</strong>
+                <span>الملفات المحددة تُرفع عبر `/api/admin-add-files` باستخدام `lecture_id` و`files`.</span>
               </div>
             </div>
           </div>
+        </section>
 
-          <div class="box">
-            <div class="box-title">ملفات المحاضرة</div>
-            <label for="files">اختر الملفات من الكمبيوتر</label>
-            <input id="files" name="files" type="file" multiple />
-            <div class="small" style="margin-top:8px;">
-              يمكن اختيار أكثر من ملف. سيتم حفظ الاسم الأصلي تلقائيًا.
-            </div>
+        <section class="side-card">
+          <h3>نصائح سريعة</h3>
+          <p>هذه الأشياء تخلي النتيجة أجمل داخل المكتبة العامة.</p>
+          <ul class="tips-list">
+            <li>اكتب عنوانًا واضحًا وقصيرًا نسبيًا حتى يظهر بشكل أنيق في البطاقة.</li>
+            <li>ضع كل speaker في سطر مستقل بدل جمع الأسماء في سطر واحد.</li>
+            <li>يفضل أن يكون وصف المحاضرة من سطرين إلى أربعة أسطر.</li>
+            <li>إذا كان لديك غلاف مخصص، استخدم صورة أفقية ليظهر الشكل أجمل.</li>
+          </ul>
+        </section>
 
-            <div id="selectedFilesBox" class="selected-files"></div>
-          </div>
-        </div>
+        <section class="mini-note">
+          <strong>مهم</strong>
+          <span>إذا فشل رفع الغلاف أو الملفات بعد إنشاء المحاضرة، ستبقى المحاضرة محفوظة، ويمكنك إكمال الباقي من صفحة التعديل مباشرة.</span>
+        </section>
       </aside>
-    </div>
-
-    <div class="footer-note">
-      Powered by Lecture Library Upload
     </div>
   </div>
 
   <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const form = document.getElementById("lectureForm");
+    const titleEl = document.getElementById("title");
+    const lectureDateEl = document.getElementById("lectureDate");
+    const descriptionEl = document.getElementById("description");
+    const speakerEl = document.getElementById("speaker");
+    const isPublishedEl = document.getElementById("isPublished");
 
-    const form = document.getElementById("uploadForm");
-    const statusBox = document.getElementById("status");
+    const coverFileEl = document.getElementById("coverFile");
+    const lectureFilesEl = document.getElementById("lectureFiles");
+
+    const coverInlinePreviewEl = document.getElementById("coverInlinePreview");
+    const previewCoverEl = document.getElementById("previewCover");
+    const previewTitleEl = document.getElementById("previewTitle");
+    const previewSpeakerEl = document.getElementById("previewSpeaker");
+    const previewDateEl = document.getElementById("previewDate");
+    const previewDescriptionEl = document.getElementById("previewDescription");
+    const previewFilesTitleEl = document.getElementById("previewFilesTitle");
+    const previewFilesListEl = document.getElementById("previewFilesList");
+    const previewFirstTypeEl = document.getElementById("previewFirstType");
+    const previewPublishChipEl = document.getElementById("previewPublishChip");
+
+    const selectedFilesBoxEl = document.getElementById("selectedFilesBox");
+    const selectedFilesListEl = document.getElementById("selectedFilesList");
+    const statusBox = document.getElementById("statusBox");
     const submitBtn = document.getElementById("submitBtn");
     const resetBtn = document.getElementById("resetBtn");
 
-    const titleEl = document.getElementById("title");
-    const speakerEl = document.getElementById("speaker");
-    const lectureDateEl = document.getElementById("lecture_date");
-    const descriptionEl = document.getElementById("description");
-    const coverImageUrlEl = document.getElementById("cover_image_url");
-    const isPublishedEl = document.getElementById("is_published");
-    const coverFileEl = document.getElementById("cover_file");
-    const filesEl = document.getElementById("files");
+    const successBox = document.getElementById("successBox");
+    const successText = document.getElementById("successText");
+    const successActions = document.getElementById("successActions");
 
-    const coverPreviewBox = document.getElementById("coverPreviewBox");
-    const selectedFilesBox = document.getElementById("selectedFilesBox");
-
-    function showStatus(message, type = "ok") {
-      statusBox.textContent = message;
-      statusBox.className = `status show ${type}`;
-      statusBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-
-    function hideStatus() {
-      statusBox.textContent = "";
-      statusBox.className = "status";
-    }
+    let selectedLectureFiles = [];
+    let coverPreviewUrl = "";
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -575,78 +1264,193 @@
       return String(value ?? "").trim();
     }
 
-    function makePlaceholderCoverDataUrl(label = "Lecture") {
-      const safeLabel = String(label || "Lecture")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+    function showStatus(message, type = "ok") {
+      statusBox.textContent = message;
+      statusBox.className = `status show ${type}`;
+    }
 
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
-          <rect width="1200" height="675" fill="#eef2ff"/>
-          <rect x="50" y="50" width="1100" height="575" rx="28" fill="#ffffff" stroke="#dbeafe" stroke-width="3"/>
-          <circle cx="160" cy="140" r="28" fill="#2563eb" opacity="0.18"/>
-          <circle cx="1080" cy="540" r="42" fill="#2563eb" opacity="0.12"/>
-          <text x="90" y="250" font-size="34" font-family="Arial, Tahoma, sans-serif" fill="#2563eb">Lecture Library</text>
-          <text x="90" y="340" font-size="62" font-weight="700" font-family="Arial, Tahoma, sans-serif" fill="#14213d">${safeLabel}</text>
-          <text x="90" y="410" font-size="26" font-family="Arial, Tahoma, sans-serif" fill="#6b7280">No custom cover available</text>
-        </svg>
-      `.trim();
+    function hideStatus() {
+      statusBox.textContent = "";
+      statusBox.className = "status";
+    }
 
-      return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    function hideSuccessBox() {
+      successBox.className = "success-box";
+      successText.textContent = "";
+      successActions.innerHTML = "";
+    }
+
+    function showSuccessBox(lectureId, extraMessage = "") {
+      successBox.className = "success-box show";
+      successText.textContent = extraMessage || "تم إنشاء المحاضرة بنجاح. يمكنك الانتقال إلى صفحة التعديل أو مراجعة المكتبة العامة.";
+
+      successActions.innerHTML = `
+        <a class="primary-btn" href="/admin/edit-lecture/?id=${Number(lectureId)}">فتح صفحة التعديل</a>
+        <a class="ghost-btn" href="/admin/">العودة للوحة الإدارة</a>
+        <a class="secondary-btn" href="/lecture-library/" target="_blank" rel="noopener">فتح المكتبة العامة</a>
+      `;
+    }
+
+    function formatBytes(bytes) {
+      const value = Number(bytes || 0);
+      if (!Number.isFinite(value) || value <= 0) return "0 B";
+
+      const units = ["B", "KB", "MB", "GB"];
+      let size = value;
+      let unitIndex = 0;
+
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+
+      return `${size % 1 === 0 ? size : size.toFixed(1)} ${units[unitIndex]}`;
+    }
+
+    function inferFileTypeFromName(name = "") {
+      const fileName = clean(name).toLowerCase();
+      const idx = fileName.lastIndexOf(".");
+      if (idx === -1) return "FILE";
+
+      return fileName.slice(idx + 1).toUpperCase() || "FILE";
+    }
+
+    function normalizeSpeakerLines(value) {
+      return String(value || "")
+        .split(/\r?\n/)
+        .map((line) => clean(line))
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    function formatSpeakerPreview(value) {
+      const normalized = normalizeSpeakerLines(value);
+      if (!normalized) return "اسم المتحدث";
+      return normalized;
+    }
+
+    function formatDatePreview(value) {
+      if (!value) return "تاريخ المحاضرة";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+
+      return new Intl.DateTimeFormat("en", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }).format(date);
+    }
+
+    function revokeCoverPreviewIfNeeded() {
+      if (coverPreviewUrl) {
+        URL.revokeObjectURL(coverPreviewUrl);
+        coverPreviewUrl = "";
+      }
+    }
+
+    function getCurrentCoverUrl() {
+      const file = coverFileEl.files && coverFileEl.files[0];
+      if (!file) return "";
+
+      revokeCoverPreviewIfNeeded();
+      coverPreviewUrl = URL.createObjectURL(file);
+      return coverPreviewUrl;
+    }
+
+    function renderCoverPreviews() {
+      const url = getCurrentCoverUrl();
+
+      if (url) {
+        coverInlinePreviewEl.style.backgroundImage = `url("${url}")`;
+        previewCoverEl.style.backgroundImage = `url("${url}")`;
+      } else {
+        coverInlinePreviewEl.style.backgroundImage = "";
+        previewCoverEl.style.backgroundImage = "";
+      }
     }
 
     function renderSelectedFiles() {
-      const files = Array.from(filesEl.files || []);
-      if (!files.length) {
-        selectedFilesBox.innerHTML = "";
+      if (!selectedLectureFiles.length) {
+        selectedFilesBoxEl.className = "selected-files empty";
+        selectedFilesListEl.innerHTML = "";
         return;
       }
 
-      selectedFilesBox.innerHTML = files.map((file) => `
-        <div class="selected-file">${escapeHtml(file.name)} • ${Math.round((file.size || 0) / 1024)} KB</div>
-      `).join("");
+      selectedFilesBoxEl.className = "selected-files";
+
+      selectedFilesListEl.innerHTML = selectedLectureFiles.map((file, index) => {
+        const type = inferFileTypeFromName(file.name);
+
+        return `
+          <div class="selected-file">
+            <div class="selected-file-main">
+              <div class="selected-file-icon">${escapeHtml(type)}</div>
+              <div class="selected-file-text">
+                <div class="selected-file-name">${escapeHtml(file.name || "File")}</div>
+                <div class="selected-file-size">${escapeHtml(formatBytes(file.size))}</div>
+              </div>
+            </div>
+            <button class="danger-btn" type="button" onclick="removeSelectedFile(${index})">إزالة</button>
+          </div>
+        `;
+      }).join("");
     }
 
-    function renderCoverFromUrl(url) {
-      const value = clean(url);
-      if (!value) return false;
+    function renderPreviewFiles() {
+      const total = selectedLectureFiles.length;
+      previewFilesTitleEl.textContent = `الملفات (${total})`;
 
-      coverPreviewBox.className = "";
-      coverPreviewBox.innerHTML = `<img class="cover-preview" src="${escapeHtml(value)}" alt="Cover preview" />`;
-      return true;
-    }
-
-    function renderCoverPlaceholder() {
-      const placeholder = makePlaceholderCoverDataUrl(titleEl.value.trim() || "Lecture");
-      coverPreviewBox.className = "";
-      coverPreviewBox.innerHTML = `<img class="cover-preview" src="${placeholder}" alt="Cover preview" />`;
-    }
-
-    function renderLocalImagePreview(file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        coverPreviewBox.className = "";
-        coverPreviewBox.innerHTML = `<img class="cover-preview" src="${reader.result}" alt="Cover preview" />`;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function refreshCoverPreview() {
-      const selectedCover = coverFileEl.files && coverFileEl.files[0];
-      if (selectedCover) {
-        renderLocalImagePreview(selectedCover);
+      if (!total) {
+        previewFirstTypeEl.textContent = "FILE";
+        previewFilesListEl.innerHTML = `
+          <div class="preview-file-row">
+            <div class="preview-file-name">لا توجد ملفات مرفقة حتى الآن</div>
+            <div class="preview-badge">FILE</div>
+          </div>
+        `;
         return;
       }
 
-      if (renderCoverFromUrl(coverImageUrlEl.value)) {
-        return;
-      }
+      previewFirstTypeEl.textContent = inferFileTypeFromName(selectedLectureFiles[0].name);
 
-      renderCoverPlaceholder();
+      previewFilesListEl.innerHTML = selectedLectureFiles.map((file) => {
+        const type = inferFileTypeFromName(file.name);
+
+        return `
+          <div class="preview-file-row">
+            <div class="preview-file-name">${escapeHtml(file.name || "Open file")}</div>
+            <div class="preview-badge">${escapeHtml(type)}</div>
+          </div>
+        `;
+      }).join("");
     }
 
-    async function createLecture(payload) {
+    function renderPreview() {
+      previewTitleEl.textContent = clean(titleEl.value) || "عنوان المحاضرة";
+      previewSpeakerEl.textContent = formatSpeakerPreview(speakerEl.value);
+      previewDateEl.textContent = formatDatePreview(lectureDateEl.value);
+      previewDescriptionEl.textContent = clean(descriptionEl.value) || "سيظهر وصف المحاضرة هنا بعد كتابته.";
+      previewPublishChipEl.textContent = Number(isPublishedEl.value) === 1 ? "منشورة" : "مخفية";
+      previewSpeakerEl.style.whiteSpace = "pre-line";
+
+      renderCoverPreviews();
+      renderPreviewFiles();
+    }
+
+    function resetFormState() {
+      revokeCoverPreviewIfNeeded();
+      form.reset();
+      selectedLectureFiles = [];
+      lectureFilesEl.value = "";
+      coverFileEl.value = "";
+      renderSelectedFiles();
+      renderPreview();
+      hideStatus();
+      hideSuccessBox();
+    }
+
+    async function createLectureRecord(payload) {
       const res = await fetch("/api/lectures", {
         method: "POST",
         headers: {
@@ -661,18 +1465,15 @@
         throw new Error(data?.error || "تعذر إنشاء المحاضرة.");
       }
 
-      return data;
+      return data?.item || {};
     }
 
-    async function uploadCover(lectureId) {
-      const file = coverFileEl.files && coverFileEl.files[0];
-      if (!file) return null;
-
+    async function uploadCoverForLecture(lectureId, file) {
       const formData = new FormData();
       formData.append("lecture_id", String(lectureId));
       formData.append("cover", file);
 
-      const res = await fetch("/api/upload-cover", {
+      const res = await fetch("/api/admin-upload-cover", {
         method: "POST",
         body: formData
       });
@@ -686,10 +1487,7 @@
       return data;
     }
 
-    async function uploadFiles(lectureId) {
-      const files = Array.from(filesEl.files || []);
-      if (!files.length) return null;
-
+    async function uploadLectureFiles(lectureId, files) {
       const formData = new FormData();
       formData.append("lecture_id", String(lectureId));
 
@@ -713,80 +1511,161 @@
 
     async function handleSubmit(event) {
       event.preventDefault();
+      hideStatus();
+      hideSuccessBox();
+
+      const title = clean(titleEl.value);
+      const lectureDate = clean(lectureDateEl.value);
+      const speaker = normalizeSpeakerLines(speakerEl.value);
+      const description = clean(descriptionEl.value);
+      const isPublished = Number(isPublishedEl.value) === 0 ? 0 : 1;
+
+      if (!title) {
+        showStatus("اكتب عنوان المحاضرة أولًا.", "err");
+        titleEl.focus();
+        return;
+      }
+
+      if (!lectureDate) {
+        showStatus("اختر تاريخ المحاضرة أولًا.", "err");
+        lectureDateEl.focus();
+        return;
+      }
+
+      const payload = {
+        title,
+        description,
+        speaker,
+        lecture_date: lectureDate,
+        cover_image_url: "",
+        is_published: isPublished,
+        files: []
+      };
+
+      const coverFile = coverFileEl.files && coverFileEl.files[0] ? coverFileEl.files[0] : null;
+      let createdLectureId = 0;
 
       try {
-        hideStatus();
-
-        const title = titleEl.value.trim();
-        const lecture_date = lectureDateEl.value.trim();
-
-        if (!title) {
-          throw new Error("اكتب عنوان المحاضرة.");
-        }
-
-        if (!lecture_date) {
-          throw new Error("حدد تاريخ المحاضرة.");
-        }
-
         submitBtn.disabled = true;
-        resetBtn.disabled = true;
-        submitBtn.textContent = "جاري الإنشاء...";
+        submitBtn.textContent = "جاري إنشاء المحاضرة...";
 
-        const payload = {
-          title,
-          speaker: speakerEl.value.trim(),
-          lecture_date,
-          description: descriptionEl.value.trim(),
-          cover_image_url: coverImageUrlEl.value.trim(),
-          is_published: Number(isPublishedEl.value),
-          files: []
-        };
+        const created = await createLectureRecord(payload);
+        createdLectureId = Number(created?.id || 0);
 
-        const created = await createLecture(payload);
-        const lectureId = Number(created?.item?.id);
-
-        if (!lectureId) {
-          throw new Error("تم إنشاء المحاضرة لكن لم يتم إرجاع رقمها.");
+        if (!createdLectureId) {
+          throw new Error("تمت الاستجابة بدون رقم محاضرة صالح.");
         }
 
-        if (coverFileEl.files && coverFileEl.files[0]) {
+        if (coverFile) {
           submitBtn.textContent = "جاري رفع الغلاف...";
-          await uploadCover(lectureId);
+          await uploadCoverForLecture(createdLectureId, coverFile);
         }
 
-        if (filesEl.files && filesEl.files.length) {
+        if (selectedLectureFiles.length) {
           submitBtn.textContent = "جاري رفع الملفات...";
-          await uploadFiles(lectureId);
+          await uploadLectureFiles(createdLectureId, selectedLectureFiles);
         }
 
-        showStatus("تم إنشاء المحاضرة ورفع المرفقات بنجاح.", "ok");
-        form.reset();
-        selectedFilesBox.innerHTML = "";
-        refreshCoverPreview();
+        showStatus("تم إنشاء المحاضرة ورفع جميع العناصر بنجاح.", "ok");
+        showSuccessBox(createdLectureId);
+        resetAfterSuccess();
       } catch (error) {
-        showStatus(error.message || "حدث خطأ أثناء إنشاء المحاضرة.", "err");
+        if (createdLectureId > 0) {
+          showStatus((error.message || "حدث خطأ بعد إنشاء المحاضرة.") + " يمكنك إكمال المتبقي من صفحة التعديل.", "warn");
+          showSuccessBox(createdLectureId, "تم إنشاء المحاضرة، لكن لم يكتمل رفع كل العناصر. افتح صفحة التعديل لإكمال الغلاف أو الملفات.");
+          resetAfterPartialSuccess();
+        } else {
+          showStatus(error.message || "حدث خطأ أثناء إنشاء المحاضرة.", "err");
+        }
       } finally {
         submitBtn.disabled = false;
-        resetBtn.disabled = false;
-        submitBtn.textContent = "إنشاء المحاضرة ورفع الملفات";
+        submitBtn.textContent = "إنشاء المحاضرة";
       }
     }
 
-    function handleReset() {
+    function resetAfterSuccess() {
+      revokeCoverPreviewIfNeeded();
       form.reset();
-      hideStatus();
-      selectedFilesBox.innerHTML = "";
-      refreshCoverPreview();
+      selectedLectureFiles = [];
+      lectureFilesEl.value = "";
+      coverFileEl.value = "";
+      renderSelectedFiles();
+      renderPreview();
     }
 
-    form.addEventListener("submit", handleSubmit);
-    resetBtn.addEventListener("click", handleReset);
-    coverImageUrlEl.addEventListener("input", refreshCoverPreview);
-    coverFileEl.addEventListener("change", refreshCoverPreview);
-    filesEl.addEventListener("change", renderSelectedFiles);
-    titleEl.addEventListener("input", refreshCoverPreview);
+    function resetAfterPartialSuccess() {
+      revokeCoverPreviewIfNeeded();
+      form.reset();
+      selectedLectureFiles = [];
+      lectureFilesEl.value = "";
+      coverFileEl.value = "";
+      renderSelectedFiles();
+      renderPreview();
+    }
 
-    refreshCoverPreview();
+    function handleLectureFilesChange() {
+      selectedLectureFiles = Array.from(lectureFilesEl.files || []);
+      renderSelectedFiles();
+      renderPreview();
+      hideSuccessBox();
+    }
+
+    function removeSelectedFile(index) {
+      selectedLectureFiles = selectedLectureFiles.filter((_, i) => i !== Number(index));
+
+      const dataTransfer = new DataTransfer();
+      for (const file of selectedLectureFiles) {
+        dataTransfer.items.add(file);
+      }
+      lectureFilesEl.files = dataTransfer.files;
+
+      renderSelectedFiles();
+      renderPreview();
+      hideSuccessBox();
+    }
+
+    window.removeSelectedFile = removeSelectedFile;
+
+    titleEl.addEventListener("input", () => {
+      renderPreview();
+      hideSuccessBox();
+    });
+
+    lectureDateEl.addEventListener("input", () => {
+      renderPreview();
+      hideSuccessBox();
+    });
+
+    descriptionEl.addEventListener("input", () => {
+      renderPreview();
+      hideSuccessBox();
+    });
+
+    speakerEl.addEventListener("input", () => {
+      renderPreview();
+      hideSuccessBox();
+    });
+
+    isPublishedEl.addEventListener("change", () => {
+      renderPreview();
+      hideSuccessBox();
+    });
+
+    coverFileEl.addEventListener("change", () => {
+      renderPreview();
+      hideSuccessBox();
+    });
+
+    lectureFilesEl.addEventListener("change", handleLectureFilesChange);
+
+    resetBtn.addEventListener("click", () => {
+      resetFormState();
+    });
+
+    form.addEventListener("submit", handleSubmit);
+
+    renderSelectedFiles();
+    renderPreview();
   </script>
 </body>
 </html>
