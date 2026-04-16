@@ -435,7 +435,13 @@
     function isPdfFile(file) {
       const type = String(file?.file_type || "").toLowerCase().trim();
       const name = String(file?.file_name || "").toLowerCase();
-      return type === "pdf" || type === "application/pdf" || name.endsWith(".pdf");
+      const url  = String(file?.file_url || "").toLowerCase();
+      return (
+        type === "pdf" ||
+        type === "application/pdf" ||
+        name.endsWith(".pdf") ||
+        url.includes(".pdf")
+      );
     }
 
     function buildPdfProxyUrl(fileUrl) {
@@ -463,7 +469,7 @@
       return new Intl.DateTimeFormat("ar-SA", { day: "numeric", month: "short", year: "numeric" }).format(new Date(dateString));
     }
 
-    async function renderPdfFirstPageToCover(element, fileUrl) {
+    async function fetchPdfBlobUrl(fileUrl) {
       const candidates = [
         buildPdfProxyUrl(fileUrl),
         fileUrl
@@ -471,36 +477,68 @@
 
       for (const candidate of candidates) {
         try {
-          const loadingTask = pdfjsLib.getDocument({
-            url: candidate,
-            disableStream: true,
-            disableAutoFetch: true,
-            useWorkerFetch: false
-          });
+          const res = await fetch(candidate);
+          if (!res.ok) continue;
 
-          const pdf = await loadingTask.promise;
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 1.2 });
+          const blob = await res.blob();
+          const contentType = (res.headers.get("content-type") || "").toLowerCase();
+          const blobType = (blob.type || "").toLowerCase();
 
-          const canvas = document.createElement("canvas");
-          const context = canvas.getContext("2d");
+          const looksPdf =
+            contentType.includes("pdf") ||
+            blobType.includes("pdf") ||
+            blob.size > 0;
 
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+          if (!looksPdf || blob.size === 0) continue;
 
-          await page.render({
-            canvasContext: context,
-            viewport
-          }).promise;
-
-          element.style.backgroundImage = `url('${canvas.toDataURL("image/jpeg", 0.9)}')`;
-          return true;
+          return URL.createObjectURL(blob);
         } catch (e) {
-          console.warn("PDF Preview failed for:", candidate, e);
+          console.warn("Fetch PDF failed:", candidate, e);
         }
       }
 
-      return false;
+      return null;
+    }
+
+    async function renderPdfFirstPageToCover(element, fileUrl) {
+      let blobUrl = null;
+
+      try {
+        blobUrl = await fetchPdfBlobUrl(fileUrl);
+        if (!blobUrl) return false;
+
+        const loadingTask = pdfjsLib.getDocument({
+          url: blobUrl,
+          disableStream: true,
+          disableAutoFetch: true,
+          useWorkerFetch: false
+        });
+
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.2 });
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({
+          canvasContext: context,
+          viewport
+        }).promise;
+
+        element.style.backgroundImage = `url('${canvas.toDataURL("image/jpeg", 0.9)}')`;
+        return true;
+      } catch (e) {
+        console.warn("PDF first page render failed:", fileUrl, e);
+        return false;
+      } finally {
+        if (blobUrl) {
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        }
+      }
     }
 
     function renderLectures() {
@@ -577,10 +615,10 @@
 
         lectures.forEach(l => {
           if (!l.stored_cover_image_url && !l.effective_cover_image_url) {
-            const firstPdf = (l.files || []).find(isPdfFile);
-            if (firstPdf) {
+            const previewFile = (l.files || []).find(isPdfFile) || (l.files || [])[0];
+            if (previewFile?.file_url) {
               const el = document.getElementById(`cov-${l.id}`);
-              if (el) renderPdfFirstPageToCover(el, firstPdf.file_url);
+              if (el) renderPdfFirstPageToCover(el, previewFile.file_url);
             }
           }
         });
