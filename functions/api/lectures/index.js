@@ -107,22 +107,6 @@ function inferFileType(rawType, fileName, fileUrl) {
   return "file";
 }
 
-function makePlaceholderCoverDataUrl(label = "Lecture Library") {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
-      <rect width="1200" height="675" fill="#eef2ff"/>
-      <rect x="50" y="50" width="1100" height="575" rx="28" fill="#ffffff" stroke="#dbeafe" stroke-width="3"/>
-      <circle cx="160" cy="140" r="28" fill="#2563eb" opacity="0.18"/>
-      <circle cx="1080" cy="540" r="42" fill="#2563eb" opacity="0.12"/>
-      <text x="90" y="250" font-size="34" font-family="Arial, Tahoma, sans-serif" fill="#2563eb">Lecture Library</text>
-      <text x="90" y="340" font-size="62" font-weight="700" font-family="Arial, Tahoma, sans-serif" fill="#14213d">${String(label || "Lecture").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</text>
-      <text x="90" y="410" font-size="26" font-family="Arial, Tahoma, sans-serif" fill="#6b7280">No custom cover available</text>
-    </svg>
-  `.trim();
-
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
 function normalizeStoredFile(file) {
   return {
     id: file?.id ?? null,
@@ -137,7 +121,7 @@ function normalizeStoredFile(file) {
   };
 }
 
-function resolveLectureCover(storedCoverUrl, files, lectureTitle) {
+function resolveLectureCover(storedCoverUrl, files) {
   const directCover = clean(storedCoverUrl);
   if (directCover) return directCover;
 
@@ -147,7 +131,7 @@ function resolveLectureCover(storedCoverUrl, files, lectureTitle) {
     if (thumb) return thumb;
   }
 
-  return makePlaceholderCoverDataUrl(lectureTitle || "Lecture");
+  return "";
 }
 
 function validateFiles(files) {
@@ -273,13 +257,13 @@ export async function onRequestGet(context) {
     const merged = items.map((lecture) => {
       const lectureFiles = filesByLectureId.get(lecture.id) || [];
       const storedCover = clean(lecture.cover_image_url);
-      const effectiveCover = resolveLectureCover(storedCover, lectureFiles, lecture.title);
+      const effectiveCover = resolveLectureCover(storedCover, lectureFiles);
 
       return {
         ...lecture,
         stored_cover_image_url: storedCover,
-        cover_image_url: effectiveCover,
-        effective_cover_image_url: effectiveCover,
+        cover_image_url: effectiveCover || "",
+        effective_cover_image_url: effectiveCover || "",
         files: lectureFiles,
       };
     });
@@ -428,7 +412,7 @@ export async function onRequestPost(context) {
 
     const insertedFiles = (insertedFilesRaw.results || []).map(normalizeStoredFile);
     const storedCover = clean(lecture?.cover_image_url);
-    const effectiveCover = resolveLectureCover(storedCover, insertedFiles, lecture?.title);
+    const effectiveCover = resolveLectureCover(storedCover, insertedFiles);
 
     return json(
       {
@@ -436,8 +420,8 @@ export async function onRequestPost(context) {
         item: {
           ...lecture,
           stored_cover_image_url: storedCover,
-          cover_image_url: effectiveCover,
-          effective_cover_image_url: effectiveCover,
+          cover_image_url: effectiveCover || "",
+          effective_cover_image_url: effectiveCover || "",
           files: insertedFiles,
         },
       },
