@@ -4,113 +4,201 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>تسجيل دخول الإدارة</title>
+  <meta name="theme-color" content="#0d6fb8" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
+    :root {
+      --bg: #eef5ff;
+      --card: rgba(255, 255, 255, 0.88);
+      --text: #10243e;
+      --muted: #5f738d;
+      --blue: #0d6fb8;
+      --blue-dark: #084a86;
+      --danger-bg: #fff1f2;
+      --danger-text: #c92a4b;
+      --success-bg: #ecfdf3;
+      --success-text: #0f8a4b;
+      --radius-xl: 34px;
+      --radius-lg: 24px;
+      --shadow-lg: 0 28px 70px rgba(11, 64, 122, 0.14);
+      --font-stack: "Manrope", "IBM Plex Sans Arabic", sans-serif;
+      --transition: 0.22s ease;
+    }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f7fb;
-      color: #1f2937;
+      font-family: var(--font-stack);
+      background:
+        radial-gradient(circle at top right, rgba(60, 163, 216, 0.18), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(13, 111, 184, 0.1), transparent 32%),
+        linear-gradient(180deg, #f5faff 0%, #edf5ff 52%, #eaf2fc 100%);
       min-height: 100vh;
       display: grid;
       place-items: center;
       padding: 20px;
+      color: var(--text);
     }
+
     .card {
       width: 100%;
-      max-width: 420px;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.08);
-      padding: 28px;
+      max-width: 440px;
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      padding: 40px;
+      text-align: center;
     }
+
+    .logo-area {
+      margin-bottom: 24px;
+    }
+
+    .logo-img {
+      max-width: 180px;
+      height: auto;
+      border-radius: 14px;
+    }
+
     h1 {
       margin: 0 0 10px;
-      font-size: 26px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
+
     p {
-      margin: 0 0 22px;
-      color: #6b7280;
-      font-size: 14px;
-      line-height: 1.7;
+      margin: 0 0 30px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
     }
+
+    .form-group {
+      text-align: right;
+      margin-bottom: 20px;
+    }
+
     label {
       display: block;
       margin-bottom: 8px;
       font-weight: 700;
       font-size: 14px;
+      color: var(--blue-dark);
+      padding-right: 4px;
     }
-    input {
+
+    input[type="password"] {
       width: 100%;
-      padding: 13px 14px;
-      border: 1px solid #d1d5db;
-      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(13, 111, 184, 0.12);
+      border-radius: 18px;
+      font-size: 16px;
+      font-family: inherit;
       outline: none;
-      font-size: 14px;
-      margin-bottom: 14px;
+      background: #ffffff;
+      transition: all var(--transition);
+      box-shadow: 0 4px 12px rgba(12, 78, 140, 0.03);
     }
-    input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+
+    input[type="password"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(13, 111, 184, 0.1);
     }
-    button {
+
+    .btn {
       width: 100%;
-      border: 0;
-      border-radius: 12px;
-      padding: 13px 16px;
-      background: #2563eb;
+      padding: 16px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
       color: #fff;
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 800;
       cursor: pointer;
+      font-family: inherit;
+      transition: all var(--transition);
+      box-shadow: 0 12px 24px rgba(13, 111, 184, 0.22);
+      margin-top: 10px;
     }
-    button:hover { background: #1d4ed8; }
-    button:disabled {
-      opacity: .7;
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px rgba(13, 111, 184, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
       cursor: not-allowed;
+      transform: none;
     }
+
     .status {
-      margin-top: 14px;
-      padding: 12px 14px;
-      border-radius: 12px;
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 16px;
       font-size: 14px;
+      font-weight: 700;
       display: none;
-      line-height: 1.6;
-      white-space: pre-line;
+      animation: fadeIn 0.3s ease;
     }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .status.error {
-      display: block;
-      background: #fef2f2;
-      color: #991b1b;
-      border: 1px solid #fecaca;
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border: 1px solid rgba(201, 42, 75, 0.1);
     }
+
     .status.success {
-      display: block;
-      background: #ecfdf5;
-      color: #065f46;
-      border: 1px solid #a7f3d0;
+      background: var(--success-bg);
+      color: var(--success-text);
+      border: 1px solid rgba(15, 138, 75, 0.1);
     }
-    .small {
-      margin-top: 12px;
-      color: #6b7280;
+
+    .footer-copy {
+      margin-top: 30px;
       font-size: 12px;
-      text-align: center;
+      color: var(--muted);
     }
   </style>
 </head>
 <body>
+
   <div class="card">
-    <h1>دخول الإدارة</h1>
-    <p>أدخل كلمة المرور للوصول إلى صفحات الإدارة الخاصة بمكتبة المحاضرات.</p>
+    <div class="logo-area">
+      <img src="/assets/alahsa-health-cluster-logo.jpg.jpg" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+    </div>
+    
+    <h1>تسجيل الدخول</h1>
+    <p>لوحة التحكم في مكتبة المحاضرات</p>
 
     <form id="loginForm">
-      <label for="password">كلمة المرور</label>
-      <input id="password" type="password" placeholder="أدخل كلمة المرور" required />
-      <button id="loginBtn" type="submit">دخول</button>
-      <div id="statusBox" class="status"></div>
+      <div class="form-group">
+        <label for="password">كلمة مرور الإدارة</label>
+        <input type="password" id="password" placeholder="••••••••" required autofocus />
+      </div>
+
+      <button type="submit" id="loginBtn" class="btn">دخول اللوحة</button>
     </form>
 
-    <div class="small">Lecture Library Admin</div>
+    <div id="statusBox" class="status"></div>
+
+    <div class="footer-copy">
+      Our MedTalk &copy; 2026
+    </div>
   </div>
 
   <script>
@@ -146,7 +234,7 @@
 
       try {
         loginBtn.disabled = true;
-        loginBtn.textContent = "جارٍ الدخول...";
+        loginBtn.textContent = "جارٍ التحقق...";
 
         const res = await fetch("/api/admin-login", {
           method: "POST",
@@ -159,16 +247,20 @@
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          throw new Error(data.error || "فشل تسجيل الدخول");
+          throw new Error(data.error || "كلمة المرور غير صحيحة");
         }
 
-        setStatus("success", "تم تسجيل الدخول بنجاح...");
-        location.href = data.next || next;
+        setStatus("success", "تم تسجيل الدخول بنجاح، جاري التحويل...");
+        
+        setTimeout(() => {
+          location.href = data.next || next;
+        }, 800);
+
       } catch (err) {
         setStatus("error", err.message || "فشل تسجيل الدخول");
       } finally {
         loginBtn.disabled = false;
-        loginBtn.textContent = "دخول";
+        loginBtn.textContent = "دخول اللوحة";
       }
     });
   </script>
