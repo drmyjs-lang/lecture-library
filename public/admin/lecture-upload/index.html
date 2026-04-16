@@ -173,100 +173,12 @@
       transform: translateY(-1px);
     }
 
-    .hero {
+    /* التخطيط الجديد للقسمين بجانب بعض */
+    .main-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
+      grid-template-columns: minmax(0, 1.5fr) minmax(360px, 1fr);
       gap: 22px;
-      align-items: stretch;
-      margin-bottom: 22px;
-    }
-
-    .hero-panel,
-    .preview-panel,
-    .form-card,
-    .side-card,
-    .status {
-      border-radius: var(--radius-xl);
-      border: 1px solid rgba(255,255,255,0.7);
-      background: var(--card);
-      backdrop-filter: blur(20px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .hero-panel {
-      padding: 30px 30px 26px;
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-    }
-
-    .hero-panel::before {
-      content: "";
-      position: absolute;
-      inset: auto -80px -110px auto;
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(60,163,216,0.22), transparent 62%);
-      z-index: -1;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 14px;
-      border-radius: 999px;
-      background: rgba(13,111,184,0.08);
-      color: var(--blue-dark);
-      font-size: 13px;
-      font-weight: 800;
-      margin-bottom: 18px;
-    }
-
-    .hero-title {
-      margin: 0 0 12px;
-      font-size: clamp(30px, 4vw, 48px);
-      line-height: 1.04;
-      letter-spacing: -0.04em;
-      font-weight: 800;
-      max-width: 760px;
-    }
-
-    .hero-desc {
-      margin: 0 0 22px;
-      max-width: 740px;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.9;
-    }
-
-    .hero-points {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .hero-point {
-      padding: 18px;
-      border-radius: 22px;
-      background: rgba(255,255,255,0.74);
-      border: 1px solid rgba(13,111,184,0.08);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.92);
-    }
-
-    .hero-point strong {
-      display: block;
-      font-size: 18px;
-      margin-bottom: 6px;
-      letter-spacing: -0.02em;
-    }
-
-    .hero-point span {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.7;
+      align-items: start;
     }
 
     .preview-panel {
@@ -274,6 +186,14 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
+      width: 100%;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255,255,255,0.7);
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-md);
+      position: sticky;
+      top: 22px;
     }
 
     .preview-head {
@@ -433,15 +353,12 @@
       text-transform: uppercase;
     }
 
-    .content-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 380px;
-      gap: 22px;
-      align-items: start;
-    }
-
-    .form-card,
-    .side-card {
+    .form-card {
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255,255,255,0.7);
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow-md);
       padding: 22px;
     }
 
@@ -453,16 +370,14 @@
       margin-bottom: 18px;
     }
 
-    .card-head h2,
-    .side-card h3 {
+    .card-head h2 {
       margin: 0;
       font-size: 22px;
       letter-spacing: -0.03em;
       font-weight: 800;
     }
 
-    .card-head p,
-    .side-card p {
+    .card-head p {
       margin: 7px 0 0;
       color: var(--muted);
       line-height: 1.8;
@@ -479,7 +394,6 @@
     .field,
     .field-full,
     .upload-box,
-    .mini-note,
     .selected-files,
     .success-box {
       border: 1px solid rgba(13,111,184,0.08);
@@ -698,25 +612,6 @@
       font-size: 12px;
     }
 
-    .mini-note {
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-
-    .mini-note strong {
-      display: block;
-      font-size: 14px;
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .mini-note span {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.8;
-    }
-
     .status {
       display: none;
       padding: 16px 18px;
@@ -724,6 +619,7 @@
       line-height: 1.8;
       font-size: 14px;
       font-weight: 700;
+      border-radius: var(--radius-xl);
     }
 
     .status.show {
@@ -733,21 +629,21 @@
     .status.ok {
       background: var(--success-bg);
       color: var(--success-text);
-      border-color: rgba(15,138,75,0.14);
+      border: 1px solid rgba(15,138,75,0.14);
       box-shadow: 0 14px 30px rgba(15,138,75,0.08);
     }
 
     .status.warn {
       background: var(--warn-bg);
       color: var(--warn-text);
-      border-color: rgba(196,106,18,0.14);
+      border: 1px solid rgba(196,106,18,0.14);
       box-shadow: 0 14px 30px rgba(196,106,18,0.08);
     }
 
     .status.err {
       background: var(--danger-bg);
       color: var(--danger-text);
-      border-color: rgba(201,42,75,0.14);
+      border: 1px solid rgba(201,42,75,0.14);
       box-shadow: 0 14px 30px rgba(201,42,75,0.08);
     }
 
@@ -807,74 +703,6 @@
       transform: none;
     }
 
-    .side-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      position: sticky;
-      top: 22px;
-    }
-
-    .tips-list {
-      margin: 14px 0 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 12px;
-    }
-
-    .tips-list li {
-      padding: 13px 14px;
-      border-radius: 16px;
-      background: rgba(13,111,184,0.06);
-      color: var(--text);
-      line-height: 1.8;
-      font-size: 13px;
-      border: 1px solid rgba(13,111,184,0.08);
-    }
-
-    .steps {
-      display: grid;
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    .step {
-      display: grid;
-      grid-template-columns: 40px 1fr;
-      gap: 12px;
-      align-items: start;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,0.76);
-      border: 1px solid rgba(13,111,184,0.08);
-    }
-
-    .step-no {
-      width: 40px;
-      height: 40px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--blue-dark);
-      background: rgba(13,111,184,0.08);
-    }
-
-    .step strong {
-      display: block;
-      margin-bottom: 4px;
-      font-size: 14px;
-    }
-
-    .step span {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.8;
-    }
-
     .success-box {
       display: none;
       padding: 16px;
@@ -905,18 +733,13 @@
       flex-wrap: wrap;
     }
 
-    .muted-small {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
+    /* استجابة الشاشات الصغيرة */
     @media (max-width: 1180px) {
-      .hero,
-      .content-grid {
+      .main-layout {
         grid-template-columns: 1fr;
       }
 
-      .side-stack {
+      .preview-panel {
         position: static;
       }
     }
@@ -927,10 +750,8 @@
       }
 
       .topbar,
-      .hero-panel,
       .preview-panel,
-      .form-card,
-      .side-card {
+      .form-card {
         border-radius: 24px;
       }
 
@@ -949,7 +770,6 @@
         justify-content: center;
       }
 
-      .hero-points,
       .section-grid {
         grid-template-columns: 1fr;
       }
@@ -979,7 +799,6 @@
         <div class="brand-mark">🎓</div>
         <div class="brand-copy">
           <h1 class="brand-title">رفع محاضرة جديدة</h1>
-          <p class="brand-sub">واجهة جديدة بهوية أنيقة ونظيفة، مع معاينة مباشرة قبل الحفظ ورفع الغلاف والملفات بنفس التدفق الحالي.</p>
         </div>
       </div>
 
@@ -989,69 +808,8 @@
       </div>
     </header>
 
-    <section class="hero">
-      <div class="hero-panel">
-        <div class="eyebrow">واجهة جديدة · Lecture Upload</div>
-        <h2 class="hero-title">ارفع المحاضرة بشكل مرتب، سريع، واحترافي.</h2>
-        <p class="hero-desc">
-          أدخل بيانات المحاضرة، اكتب كل speaker في سطر مستقل، ثم ارفع الغلاف والملفات.
-          ستشاهد معاينة فورية للبطاقة كما ستظهر داخل المكتبة تقريبًا.
-        </p>
-
-        <div class="hero-points">
-          <div class="hero-point">
-            <strong>ستايل أنظف</strong>
-            <span>بطاقات كبيرة، زوايا ناعمة، ألوان هادئة، وتباين أوضح للعناوين والحقول.</span>
-          </div>
-          <div class="hero-point">
-            <strong>معاينة مباشرة</strong>
-            <span>عنوان المحاضرة، المتحدثون، الغلاف، وعدد الملفات يتحدثون فورًا أثناء الكتابة.</span>
-          </div>
-          <div class="hero-point">
-            <strong>رفع منظم</strong>
-            <span>إنشاء المحاضرة أولًا ثم رفع الغلاف والملفات تلقائيًا في نفس العملية.</span>
-          </div>
-        </div>
-      </div>
-
-      <aside class="preview-panel">
-        <div class="preview-head">
-          <h2>المعاينة المباشرة</h2>
-          <div class="preview-chip" id="previewPublishChip">منشورة</div>
-        </div>
-
-        <article class="preview-card">
-          <div class="preview-cover" id="previewCover">
-            <div class="preview-cover-label">Cover Preview</div>
-          </div>
-
-          <div class="preview-body">
-            <div class="preview-meta">
-              <div class="preview-speaker" id="previewSpeaker">اسم المتحدث</div>
-              <div id="previewDate">تاريخ المحاضرة</div>
-            </div>
-
-            <h3 class="preview-title" id="previewTitle">عنوان المحاضرة</h3>
-            <div class="preview-desc" id="previewDescription">سيظهر وصف المحاضرة هنا بعد كتابته.</div>
-
-            <div class="preview-files">
-              <div class="preview-files-head">
-                <div class="preview-files-title" id="previewFilesTitle">الملفات (0)</div>
-                <div class="preview-badge" id="previewFirstType">FILE</div>
-              </div>
-              <div id="previewFilesList">
-                <div class="preview-file-row">
-                  <div class="preview-file-name">لا توجد ملفات مرفقة حتى الآن</div>
-                  <div class="preview-badge">FILE</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </article>
-      </aside>
-    </section>
-
-    <div class="content-grid">
+    <div class="main-layout">
+      
       <main>
         <div class="status" id="statusBox"></div>
 
@@ -1165,54 +923,42 @@
         </section>
       </main>
 
-      <aside class="side-stack">
-        <section class="side-card">
-          <h3>تسلسل العمل</h3>
-          <p>الرفع الآن يعمل بنفس المنطق الحالي لكن داخل واجهة أوضح وأسهل.</p>
+      <aside class="preview-panel">
+        <div class="preview-head">
+          <h2>المعاينة المباشرة</h2>
+          <div class="preview-chip" id="previewPublishChip">منشورة</div>
+        </div>
 
-          <div class="steps">
-            <div class="step">
-              <div class="step-no">1</div>
-              <div>
-                <strong>إنشاء سجل المحاضرة</strong>
-                <span>يتم إرسال title وspeaker وlecture_date وdescription وis_published إلى `/api/lectures`.</span>
-              </div>
+        <article class="preview-card">
+          <div class="preview-cover" id="previewCover">
+            <div class="preview-cover-label">Cover Preview</div>
+          </div>
+
+          <div class="preview-body">
+            <div class="preview-meta">
+              <div class="preview-speaker" id="previewSpeaker">اسم المتحدث</div>
+              <div id="previewDate">تاريخ المحاضرة</div>
             </div>
 
-            <div class="step">
-              <div class="step-no">2</div>
-              <div>
-                <strong>رفع الغلاف</strong>
-                <span>إذا اخترت صورة، سيتم إرسالها تلقائيًا إلى `/api/admin-upload-cover` مع `lecture_id`.</span>
-              </div>
-            </div>
+            <h3 class="preview-title" id="previewTitle">عنوان المحاضرة</h3>
+            <div class="preview-desc" id="previewDescription">سيظهر وصف المحاضرة هنا بعد كتابته.</div>
 
-            <div class="step">
-              <div class="step-no">3</div>
-              <div>
-                <strong>رفع ملفات المحاضرة</strong>
-                <span>الملفات المحددة تُرفع عبر `/api/admin-add-files` باستخدام `lecture_id` و`files`.</span>
+            <div class="preview-files">
+              <div class="preview-files-head">
+                <div class="preview-files-title" id="previewFilesTitle">الملفات (0)</div>
+                <div class="preview-badge" id="previewFirstType">FILE</div>
+              </div>
+              <div id="previewFilesList">
+                <div class="preview-file-row">
+                  <div class="preview-file-name">لا توجد ملفات مرفقة حتى الآن</div>
+                  <div class="preview-badge">FILE</div>
+                </div>
               </div>
             </div>
           </div>
-        </section>
-
-        <section class="side-card">
-          <h3>نصائح سريعة</h3>
-          <p>هذه الأشياء تخلي النتيجة أجمل داخل المكتبة العامة.</p>
-          <ul class="tips-list">
-            <li>اكتب عنوانًا واضحًا وقصيرًا نسبيًا حتى يظهر بشكل أنيق في البطاقة.</li>
-            <li>ضع كل speaker في سطر مستقل بدل جمع الأسماء في سطر واحد.</li>
-            <li>يفضل أن يكون وصف المحاضرة من سطرين إلى أربعة أسطر.</li>
-            <li>إذا كان لديك غلاف مخصص، استخدم صورة أفقية ليظهر الشكل أجمل.</li>
-          </ul>
-        </section>
-
-        <section class="mini-note">
-          <strong>مهم</strong>
-          <span>إذا فشل رفع الغلاف أو الملفات بعد إنشاء المحاضرة، ستبقى المحاضرة محفوظة، ويمكنك إكمال الباقي من صفحة التعديل مباشرة.</span>
-        </section>
+        </article>
       </aside>
+      
     </div>
   </div>
 
