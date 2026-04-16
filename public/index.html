@@ -1,274 +1,285 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lecture Library</title>
+  <title>مكتبة المحاضرات - العرض العام</title>
+  <meta name="theme-color" content="#0d6fb8" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
+    :root {
+      --bg: #eef5ff;
+      --bg-soft: #f8fbff;
+      --card: rgba(255, 255, 255, 0.88);
+      --card-solid: #ffffff;
+      --text: #10243e;
+      --muted: #5f738d;
+      --line: rgba(13, 111, 184, 0.14);
+      --blue: #0d6fb8;
+      --blue-dark: #084a86;
+      --blue-soft: #3ca3d8;
+      --blue-pale: #dff1ff;
+      --shadow-lg: 0 28px 70px rgba(11, 64, 122, 0.14);
+      --shadow-md: 0 18px 40px rgba(15, 78, 145, 0.1);
+      --shadow-sm: 0 10px 24px rgba(17, 72, 128, 0.08);
+      --radius-xl: 34px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 14px;
+      --transition: 0.22s ease;
+      --font-stack: "Manrope", "IBM Plex Sans Arabic", sans-serif;
+      --max: 1200px;
+    }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f6f8fb;
-      color: #1f2937;
+      font-family: var(--font-stack);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(60, 163, 216, 0.18), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(13, 111, 184, 0.1), transparent 32%),
+        linear-gradient(180deg, #f5faff 0%, #edf5ff 52%, #eaf2fc 100%);
+      min-height: 100vh;
     }
+
     .wrap {
-      max-width: 1200px;
-      margin: 40px auto;
-      padding: 0 16px;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 40px 20px 80px;
     }
+
     .topbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
+      margin-bottom: 32px;
+      gap: 20px;
       flex-wrap: wrap;
-      margin-bottom: 24px;
     }
+
     .topbar h1 {
       margin: 0;
-      font-size: 32px;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
     }
+
     .topbar a {
-      color: #2563eb;
+      color: var(--blue);
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 10px 20px;
+      background: var(--blue-pale);
+      border-radius: 14px;
+      transition: all var(--transition);
     }
+
+    .topbar a:hover {
+      background: var(--blue);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
     .toolbar {
       display: grid;
-      grid-template-columns: 1fr 180px;
-      gap: 12px;
-      margin-bottom: 24px;
+      grid-template-columns: 1fr 200px;
+      gap: 16px;
+      margin-bottom: 40px;
+      background: var(--card);
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.6);
+      box-shadow: var(--shadow-sm);
     }
+
     .toolbar input,
     .toolbar select {
       width: 100%;
-      border: 1px solid #d1d5db;
-      border-radius: 14px;
-      padding: 13px 14px;
-      font: inherit;
-      background: white;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      background: #fff;
+      transition: all var(--transition);
     }
-    .month-group {
-      margin-bottom: 36px;
+
+    .toolbar input:focus,
+    .toolbar select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(13, 111, 184, 0.1);
     }
-    .month-title {
-      margin: 0 0 16px;
-      font-size: 22px;
-      color: #111827;
+
+    .state {
+      text-align: center;
+      padding: 40px;
+      font-weight: 700;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
     }
-    .cards {
+
+    .loading { background: var(--blue-pale); color: var(--blue-dark); }
+    .error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+
+    .month-sect { margin-bottom: 60px; }
+    .month-sect h2 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--line);
+      color: var(--blue-dark);
+    }
+
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 28px;
     }
+
     .card {
-      background: white;
-      border-radius: 18px;
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: var(--radius-lg);
       overflow: hidden;
-      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      box-shadow: var(--shadow-md);
+      transition: transform var(--transition), box-shadow var(--transition);
       display: flex;
       flex-direction: column;
     }
-    .thumb {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-      background: #eef2ff;
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .card-img {
+      aspect-ratio: 16/9;
+      background: #e9f2ff center/cover no-repeat;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-body { padding: 24px; flex-grow: 1; }
+
+    .speaker {
+      color: var(--blue);
+      font-weight: 800;
+      font-size: 13px;
+      margin-bottom: 8px;
       display: block;
     }
-    .card-body {
-      padding: 18px;
-    }
-    .card h3 {
-      margin: 0 0 8px;
-      font-size: 20px;
+
+    .title {
+      margin: 0 0 12px;
+      font-size: 22px;
+      font-weight: 800;
       line-height: 1.3;
     }
-    .meta {
-      color: #6b7280;
-      font-size: 14px;
-      margin-bottom: 12px;
-    }
+
     .desc {
-      color: #374151;
-      margin-bottom: 14px;
-      line-height: 1.6;
-    }
-    .files-title {
       font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 10px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 20px;
     }
-    .file-list {
+
+    .files-list { display: grid; gap: 8px; }
+    .file-btn {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .file-link {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
       align-items: center;
-      padding: 10px 12px;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #f7fbff;
+      border: 1px solid var(--line);
       border-radius: 12px;
-      background: #f9fafb;
       text-decoration: none;
-      color: #1f2937;
-      border: 1px solid #e5e7eb;
-    }
-    .file-link:hover {
-      background: #eef2ff;
-      border-color: #c7d2fe;
-    }
-    .badge {
-      font-size: 12px;
-      background: #dbeafe;
-      color: #1d4ed8;
-      padding: 4px 8px;
-      border-radius: 999px;
-      white-space: nowrap;
-    }
-    .empty,
-    .loading,
-    .error {
-      background: white;
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 10px 28px rgba(0,0,0,0.06);
-    }
-    .muted {
-      color: #6b7280;
-    }
-    .site-footer {
-      margin-top: 30px;
-      text-align: center;
-      color: #6b7280;
+      color: var(--text);
+      font-weight: 700;
       font-size: 14px;
+      transition: all var(--transition);
     }
-    .site-footer a {
-      color: #2563eb;
-      text-decoration: none;
-      font-weight: 600;
+
+    .file-btn:hover {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
     }
-    @media (max-width: 760px) {
-      .toolbar {
-        grid-template-columns: 1fr;
-      }
+
+    .badge {
+      font-size: 10px;
+      background: rgba(13, 111, 184, 0.1);
+      padding: 4px 8px;
+      border-radius: 6px;
+      color: var(--blue-dark);
+    }
+
+    @media (max-width: 768px) {
+      .toolbar { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
+
   <div class="wrap">
     <div class="topbar">
-      <div>
-        <h1>Lecture Library</h1>
-        <div class="muted">Search, sort, and browse lectures by month.</div>
-      </div>
-      <a href="/admin/lecture-upload/">Admin Upload</a>
+      <h1>مكتبة المحاضرات</h1>
+      <a href="/admin/login/">دخول الإدارة</a>
     </div>
 
     <div class="toolbar">
-      <input id="searchInput" type="text" placeholder="Search by title, speaker, or description..." />
+      <input type="text" id="searchInput" placeholder="ابحث عن محاضرة أو متحدث..." />
       <select id="sortSelect">
-        <option value="newest">Newest first</option>
-        <option value="oldest">Oldest first</option>
+        <option value="newest">الأحدث أولاً</option>
+        <option value="oldest">الأقدم أولاً</option>
+        <option value="title">العنوان (أ-ي)</option>
       </select>
     </div>
 
-    <div id="stateBox" class="loading">Loading lectures...</div>
-    <div id="content"></div>
+    <div id="stateBox" class="state" style="display:none;"></div>
 
-    <footer class="site-footer">
-      <a href="/">Home</a> · <a href="/lecture-library/">Lecture Library</a>
-    </footer>
+    <div id="content"></div>
   </div>
 
   <script>
-    const stateBox = document.getElementById("stateBox");
-    const content = document.getElementById("content");
     const searchInput = document.getElementById("searchInput");
     const sortSelect = document.getElementById("sortSelect");
+    const stateBox = document.getElementById("stateBox");
+    const content = document.getElementById("content");
 
-    let debounceTimer = null;
+    let debounceTimer;
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function defaultThumb() {
-      const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675">
-          <rect width="1200" height="675" fill="#eef2ff"/>
-          <rect x="390" y="170" width="420" height="250" rx="20" fill="#c7d2fe"/>
-          <rect x="430" y="210" width="340" height="18" rx="9" fill="#6366f1"/>
-          <rect x="430" y="250" width="280" height="18" rx="9" fill="#818cf8"/>
-          <rect x="430" y="290" width="310" height="18" rx="9" fill="#a5b4fc"/>
-          <text x="600" y="500" text-anchor="middle" font-size="42" font-family="Arial, sans-serif" fill="#3730a3">Lecture</text>
-        </svg>
-      `;
-      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-    }
-
-    function getThumbnail(lecture) {
-      if (lecture.cover_image_url) return lecture.cover_image_url;
-
-      const fileWithThumb = (lecture.files || []).find(file => file.thumbnail_url);
-      if (fileWithThumb) return fileWithThumb.thumbnail_url;
-
-      return defaultThumb();
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
     }
 
     function formatMonth(dateStr) {
-      const date = new Date(dateStr);
-      if (Number.isNaN(date.getTime())) return "Unknown Month";
-      return date.toLocaleString("en-US", {
-        month: "long",
-        year: "numeric"
-      });
-    }
-
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      if (Number.isNaN(date.getTime())) return dateStr || "";
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-      });
-    }
-
-    function groupByMonth(items) {
-      const map = new Map();
-
-      for (const item of items) {
-        const key = formatMonth(item.lecture_date);
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(item);
-      }
-
-      return Array.from(map.entries()).map(([month, lectures]) => ({
-        month,
-        lectures
-      }));
+      if (!dateStr) return "تاريخ غير محدد";
+      const d = new Date(dateStr);
+      return new Intl.DateTimeFormat('ar-SA', { month: 'long', year: 'numeric' }).format(d);
     }
 
     function renderFiles(files) {
-      if (!files || !files.length) {
-        return `<div class="muted">No files attached.</div>`;
-      }
-
+      if (!files || !files.length) return "";
       return `
-        <div class="file-list">
-          ${files.map(file => `
-            <a class="file-link" href="${escapeHtml(file.file_url)}" target="_blank" rel="noopener noreferrer">
-              <span>${escapeHtml(file.file_name)}</span>
-              <span class="badge">${escapeHtml((file.file_type || "file").toUpperCase())}</span>
+        <div class="files-list">
+          ${files.map(f => `
+            <a href="${f.file_url}" target="_blank" class="file-btn">
+              <span>${escapeHtml(f.file_name)}</span>
+              <span class="badge">${f.file_type || 'ملف'}</span>
             </a>
           `).join("")}
         </div>
@@ -276,32 +287,34 @@
     }
 
     function renderLectures(items) {
+      stateBox.style.display = "none";
       if (!items.length) {
-        stateBox.className = "empty";
-        stateBox.textContent = "No lectures found.";
+        stateBox.style.display = "block";
+        stateBox.className = "state";
+        stateBox.textContent = "لا توجد نتائج تطابق بحثك.";
         content.innerHTML = "";
         return;
       }
 
-      stateBox.style.display = "none";
+      const groups = {};
+      items.forEach(item => {
+        const m = formatMonth(item.lecture_date);
+        if (!groups[m]) groups[m] = [];
+        groups[m].push(item);
+      });
 
-      const groups = groupByMonth(items);
-
-      content.innerHTML = groups.map(group => `
-        <section class="month-group">
-          <h2 class="month-title">${escapeHtml(group.month)}</h2>
-          <div class="cards">
-            ${group.lectures.map(lecture => `
+      content.innerHTML = Object.keys(groups).map(month => `
+        <section class="month-sect">
+          <h2>${month}</h2>
+          <div class="grid">
+            ${groups[month].map(l => `
               <article class="card">
-                <img class="thumb" src="${escapeHtml(getThumbnail(lecture))}" alt="${escapeHtml(lecture.title)}" />
+                <div class="card-img" style="background-image: url('${l.stored_cover_image_url || l.cover_image_url || '/assets/placeholder.png'}')"></div>
                 <div class="card-body">
-                  <h3>${escapeHtml(lecture.title)}</h3>
-                  <div class="meta">
-                    ${escapeHtml(lecture.speaker || "Unknown speaker")} • ${escapeHtml(formatDate(lecture.lecture_date))}
-                  </div>
-                  <div class="desc">${escapeHtml(lecture.description || "No description.")}</div>
-                  <div class="files-title">Files (${lecture.files ? lecture.files.length : 0})</div>
-                  ${renderFiles(lecture.files || [])}
+                  <span class="speaker">${escapeHtml(l.speaker)}</span>
+                  <h3 class="title">${escapeHtml(l.title)}</h3>
+                  <p class="desc">${escapeHtml(l.description || "لا يوجد وصف لهذه المحاضرة.")}</p>
+                  ${renderFiles(l.files || [])}
                 </div>
               </article>
             `).join("")}
@@ -312,45 +325,38 @@
 
     async function loadLectures() {
       stateBox.style.display = "block";
-      stateBox.className = "loading";
-      stateBox.textContent = "Loading lectures...";
-      content.innerHTML = "";
-
+      stateBox.className = "state loading";
+      stateBox.textContent = "جاري تحميل المحاضرات...";
+      
       try {
         const q = searchInput.value.trim();
         const sort = sortSelect.value;
-
         const url = new URL("/api/lectures", window.location.origin);
         if (q) url.searchParams.set("q", q);
         url.searchParams.set("sort", sort);
 
-        const res = await fetch(url.toString(), {
-          headers: {
-            "Accept": "application/json"
-          }
-        });
-
+        const res = await fetch(url.toString());
         const data = await res.json();
 
-        if (!res.ok || !data.ok) {
-          throw new Error(data.error || "Failed to load lectures.");
-        }
+        if (!res.ok || !data.ok) throw new Error(data.error || "فشل التحميل");
 
         renderLectures(data.items || []);
       } catch (error) {
-        stateBox.className = "error";
-        stateBox.textContent = error.message || "Something went wrong while loading the library.";
+        stateBox.style.display = "block";
+        stateBox.className = "state error";
+        stateBox.textContent = error.message;
         content.innerHTML = "";
       }
     }
 
     searchInput.addEventListener("input", () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(loadLectures, 350);
+      debounceTimer = setTimeout(loadLectures, 400);
     });
 
     sortSelect.addEventListener("change", loadLectures);
 
+    // التحميل الأولي
     loadLectures();
   </script>
 </body>
