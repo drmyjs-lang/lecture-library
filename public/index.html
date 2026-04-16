@@ -177,6 +177,8 @@
       font-size: 13px;
       margin-bottom: 8px;
       display: block;
+      white-space: pre-line;
+      line-height: 1.8;
     }
 
     .title {
@@ -266,6 +268,10 @@
       })[m]);
     }
 
+    function formatSpeaker(speaker) {
+      return escapeHtml(speaker || "").replace(/\r?\n/g, "<br>");
+    }
+
     function formatMonth(dateStr) {
       if (!dateStr) return "تاريخ غير محدد";
       const d = new Date(dateStr);
@@ -311,7 +317,7 @@
               <article class="card">
                 <div class="card-img" style="background-image: url('${l.stored_cover_image_url || l.cover_image_url || '/assets/placeholder.png'}')"></div>
                 <div class="card-body">
-                  <span class="speaker">${escapeHtml(l.speaker)}</span>
+                  <span class="speaker">${formatSpeaker(l.speaker)}</span>
                   <h3 class="title">${escapeHtml(l.title)}</h3>
                   <p class="desc">${escapeHtml(l.description || "لا يوجد وصف لهذه المحاضرة.")}</p>
                   ${renderFiles(l.files || [])}
@@ -356,7 +362,6 @@
 
     sortSelect.addEventListener("change", loadLectures);
 
-    // التحميل الأولي
     loadLectures();
   </script>
 </body>
