@@ -433,9 +433,9 @@
     }
 
     function isPdfFile(file) {
-      const type = String(file?.file_type || "").toLowerCase();
+      const type = String(file?.file_type || "").toLowerCase().trim();
       const name = String(file?.file_name || "").toLowerCase();
-      return type === "pdf" || name.endsWith(".pdf");
+      return type === "pdf" || type === "application/pdf" || name.endsWith(".pdf");
     }
 
     function buildPdfProxyUrl(fileUrl) {
@@ -463,20 +463,44 @@
       return new Intl.DateTimeFormat("ar-SA", { day: "numeric", month: "short", year: "numeric" }).format(new Date(dateString));
     }
 
-    async function renderPdfFirstPageToCover(element, pdfUrl) {
-      try {
-        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 1.0 });
-        const canvas = document.createElement("canvas");
-        const context = canvas.getContext("2d");
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: context, viewport }).promise;
-        element.style.backgroundImage = `url('${canvas.toDataURL("image/jpeg", 0.8)}')`;
-      } catch (e) {
-        console.error("PDF Preview Error", e);
+    async function renderPdfFirstPageToCover(element, fileUrl) {
+      const candidates = [
+        buildPdfProxyUrl(fileUrl),
+        fileUrl
+      ].filter(Boolean);
+
+      for (const candidate of candidates) {
+        try {
+          const loadingTask = pdfjsLib.getDocument({
+            url: candidate,
+            disableStream: true,
+            disableAutoFetch: true,
+            useWorkerFetch: false
+          });
+
+          const pdf = await loadingTask.promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 1.2 });
+
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          await page.render({
+            canvasContext: context,
+            viewport
+          }).promise;
+
+          element.style.backgroundImage = `url('${canvas.toDataURL("image/jpeg", 0.9)}')`;
+          return true;
+        } catch (e) {
+          console.warn("PDF Preview failed for:", candidate, e);
+        }
       }
+
+      return false;
     }
 
     function renderLectures() {
@@ -556,7 +580,7 @@
             const firstPdf = (l.files || []).find(isPdfFile);
             if (firstPdf) {
               const el = document.getElementById(`cov-${l.id}`);
-              if (el) renderPdfFirstPageToCover(el, buildPdfProxyUrl(firstPdf.file_url));
+              if (el) renderPdfFirstPageToCover(el, firstPdf.file_url);
             }
           }
         });
