@@ -4,6 +4,7 @@ function json(data, status = 200) {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*",
     },
   });
 }
@@ -12,11 +13,27 @@ function clean(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeBaseUrl(value) {
+  return clean(value).replace(/\/+$/, "");
+}
+
 function isAllowedUrl(env, fileUrl) {
-  const url = clean(fileUrl);
-  const base = clean(env.R2_PUBLIC_BASE_URL).replace(/\/+$/, "");
-  if (!url || !base) return false;
-  return url.startsWith(`${base}/`);
+  const rawTarget = clean(fileUrl);
+  const rawBase = normalizeBaseUrl(env.R2_PUBLIC_BASE_URL);
+
+  if (!rawTarget || !rawBase) return false;
+
+  try {
+    const targetUrl = new URL(rawTarget);
+    const baseUrl = new URL(rawBase);
+
+    if (targetUrl.origin !== baseUrl.origin) return false;
+
+    const basePath = baseUrl.pathname.replace(/\/+$/, "");
+    return targetUrl.pathname.startsWith(basePath + "/") || targetUrl.pathname === basePath;
+  } catch {
+    return false;
+  }
 }
 
 export async function onRequestGet(context) {
@@ -35,21 +52,65 @@ export async function onRequestGet(context) {
     }
 
     if (!isAllowedUrl(env, target)) {
-      return json({ ok: false, error: "URL is not allowed." }, 403);
+      return json(
+        {
+          ok: false,
+          error: "URL is not allowed.",
+          target,
+          allowedBase: clean(env.R2_PUBLIC_BASE_URL),
+        },
+        403
+      );
     }
 
-    const upstream = await fetch(target);
+    const forwardHeaders = new Headers();
+    const range = request.headers.get("Range");
+    if (range) forwardHeaders.set("Range", range);
 
-    if (!upstream.ok) {
-      return json({ ok: false, error: `Upstream fetch failed with status ${upstream.status}.` }, 502);
+    const upstream = await fetch(target, {
+      method: "GET",
+      headers: forwardHeaders,
+      redirect: "follow",
+    });
+
+    if (!upstream.ok && upstream.status !== 206) {
+      return json(
+        { ok: false, error: `Upstream fetch failed with status ${upstream.status}.` },
+        502
+      );
     }
 
     const headers = new Headers();
-    headers.set("Content-Type", upstream.headers.get("Content-Type") || "application/octet-stream");
+
+    headers.set(
+      "Content-Type",
+      upstream.headers.get("Content-Type") || "application/octet-stream"
+    );
+
+    const contentLength = upstream.headers.get("Content-Length");
+    if (contentLength) headers.set("Content-Length", contentLength);
+
+    const acceptRanges = upstream.headers.get("Accept-Ranges");
+    if (acceptRanges) headers.set("Accept-Ranges", acceptRanges);
+
+    const contentRange = upstream.headers.get("Content-Range");
+    if (contentRange) headers.set("Content-Range", contentRange);
+
+    const contentDisposition = upstream.headers.get("Content-Disposition");
+    if (contentDisposition) headers.set("Content-Disposition", contentDisposition);
+
+    const etag = upstream.headers.get("ETag");
+    if (etag) headers.set("ETag", etag);
+
+    const lastModified = upstream.headers.get("Last-Modified");
+    if (lastModified) headers.set("Last-Modified", lastModified);
+
     headers.set("Cache-Control", "public, max-age=3600");
+    headers.set("Access-Control-Allow-Origin", "*");
+    headers.set("X-Content-Type-Options", "nosniff");
 
     return new Response(upstream.body, {
-      status: 200,
+      status: upstream.status,
       headers,
     });
   } catch (error) {
